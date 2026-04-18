@@ -65,11 +65,4 @@
 - session validation
 - session refresh
 - session expiration check
-
-## 금지
-
-- prompt 출력
-- printf 출력
-- 사용자 입력 파싱
-- transport 처리
-- repository 직접 접근
+~~~~

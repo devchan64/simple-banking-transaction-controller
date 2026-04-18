@@ -46,9 +46,3 @@
 - exception mapping
 - no business logic
 - replaceable boundary
-
-## 금지
-
-- 비즈니스 로직 수행
-- 상태 판단
-- 입력 해석
