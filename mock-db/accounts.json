@@ -1,0 +1,26 @@
+[
+  {
+    "account_id": "account-001",
+    "balance": 1200
+  },
+  {
+    "account_id": "account-002",
+    "balance": 5400
+  },
+  {
+    "account_id": "account-003",
+    "balance": 300
+  },
+  {
+    "account_id": "account-004",
+    "balance": 8900
+  },
+  {
+    "account_id": "account-005",
+    "balance": 15000
+  },
+  {
+    "account_id": "account-006",
+    "balance": 75
+  }
+]

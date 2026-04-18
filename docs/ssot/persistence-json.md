@@ -12,6 +12,10 @@
 ## cards.json
 
 - `card_id`
+- `card_number`
+- `cardholder_name`
+- `expires_at`
+- `status`
 - `pin`
 - `account_ids`
 

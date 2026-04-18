@@ -1,0 +1,38 @@
+[
+  {
+    "card_id": "card-001",
+    "card_number": "4000-1234-5678-0001",
+    "cardholder_name": "KIM MINSU",
+    "expires_at": "2028-12",
+    "status": "ACTIVE",
+    "pin": "1234",
+    "account_ids": ["account-001", "account-002"]
+  },
+  {
+    "card_id": "card-002",
+    "card_number": "4000-1234-5678-0002",
+    "cardholder_name": "LEE SEOYEON",
+    "expires_at": "2027-08",
+    "status": "ACTIVE",
+    "pin": "5678",
+    "account_ids": ["account-003"]
+  },
+  {
+    "card_id": "card-003",
+    "card_number": "4000-1234-5678-0003",
+    "cardholder_name": "PARK JIWOO",
+    "expires_at": "2029-04",
+    "status": "ACTIVE",
+    "pin": "2468",
+    "account_ids": ["account-004", "account-005"]
+  },
+  {
+    "card_id": "card-004",
+    "card_number": "4000-1234-5678-0004",
+    "cardholder_name": "CHOI HAYUN",
+    "expires_at": "2026-11",
+    "status": "ACTIVE",
+    "pin": "1357",
+    "account_ids": ["account-006"]
+  }
+]
