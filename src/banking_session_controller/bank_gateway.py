@@ -4,7 +4,7 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
-from .contracts import CARD_STATUS_ACTIVE, ERROR_INVALID_PIN
+from .contracts import CardStatus, ERROR_INVALID_PIN
 
 
 class BankGatewayError(RuntimeError):
@@ -116,7 +116,7 @@ class JsonBankGateway:
 
     @staticmethod
     def _require_active_card(card: CardRecord) -> None:
-        if card.status != CARD_STATUS_ACTIVE:
+        if card.status != CardStatus.ACTIVE:
             raise BankGatewayError(f"Inactive card: {card.card_id}")
 
     @staticmethod

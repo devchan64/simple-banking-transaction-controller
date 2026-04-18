@@ -6,7 +6,7 @@ from pathlib import Path
 
 from banking_session_controller import (
     BankGatewayError,
-    CARD_STATUS_INACTIVE,
+    CardStatus,
     ERROR_INVALID_PIN,
     JsonBankGateway,
 )
@@ -98,7 +98,7 @@ class JsonBankGatewaySpec(TestRootSupport, unittest.TestCase):
         # 비활성 카드면 PIN이 맞아도 인증을 실패해야 한다.
         print(spec_text("비활성 카드면 PIN 인증을 거부한다"))
         cards = json.loads(self.cards_path.read_text(encoding="utf-8"))
-        cards[0]["status"] = CARD_STATUS_INACTIVE
+        cards[0]["status"] = CardStatus.INACTIVE
         self.cards_path.write_text(
             json.dumps(cards, ensure_ascii=True, indent=2),
             encoding="utf-8",

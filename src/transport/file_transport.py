@@ -3,15 +3,16 @@ from __future__ import annotations
 import json
 import os
 import time
-from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any
+
+from pydantic import BaseModel, ConfigDict
+
+from banking_session_controller.command import SessionCommand
 
 from .contracts import (
     TRANSPORT_FILE_SUFFIX,
-    TRANSPORT_REQUESTS_DIR,
-    TRANSPORT_RESPONSES_DIR,
     TRANSPORT_ROOT_ENV,
+    TransportDirectoryName,
 )
 
 WORKSPACE_ROOT = Path(__file__).resolve().parents[2]
@@ -23,17 +24,19 @@ DEFAULT_TRANSPORT_ROOT = Path(
 )
 
 
-@dataclass(frozen=True)
-class SessionRequestEnvelope:
+class SessionRequestEnvelope(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
     request_id: str
     session_id: str | None
-    command: dict[str, Any]
+    command: SessionCommand
 
 
-@dataclass(frozen=True)
-class SessionResponseEnvelope:
+class SessionResponseEnvelope(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
     request_id: str
-    result: dict[str, Any] | None = None
+    result: dict[str, object] | None = None
     error_code: str | None = None
     error_message: str | None = None
 
@@ -50,8 +53,8 @@ class FileTransport:
             if transport_root is not None
             else DEFAULT_TRANSPORT_ROOT
         )
-        self._requests_dir = self._root / TRANSPORT_REQUESTS_DIR
-        self._responses_dir = self._root / TRANSPORT_RESPONSES_DIR
+        self._requests_dir = self._root / TransportDirectoryName.REQUESTS
+        self._responses_dir = self._root / TransportDirectoryName.RESPONSES
         self._poll_interval_seconds = poll_interval_seconds
         self._timeout_seconds = timeout_seconds
         self._requests_dir.mkdir(parents=True, exist_ok=True)
@@ -81,17 +84,19 @@ class FileTransport:
         return self._responses_dir
 
     def write_request(self, request: SessionRequestEnvelope) -> None:
-        self._write_json(self.request_path(request.request_id), asdict(request))
+        self._write_json(self.request_path(request.request_id), request.model_dump())
 
     def read_request(self, request_id: str) -> SessionRequestEnvelope:
-        return SessionRequestEnvelope(**self._read_json(self.request_path(request_id)))
+        return SessionRequestEnvelope.model_validate(
+            self._read_json(self.request_path(request_id))
+        )
 
     def write_response(self, response: SessionResponseEnvelope) -> None:
-        self._write_json(self.response_path(response.request_id), asdict(response))
+        self._write_json(self.response_path(response.request_id), response.model_dump())
 
     def read_response(self, request_id: str) -> SessionResponseEnvelope:
-        return SessionResponseEnvelope(
-            **self._read_json(self.response_path(request_id))
+        return SessionResponseEnvelope.model_validate(
+            self._read_json(self.response_path(request_id))
         )
 
     def wait_for_request(self, request_id: str) -> SessionRequestEnvelope:
@@ -117,11 +122,11 @@ class FileTransport:
         raise TimeoutError(f"Timed out waiting for response: {request_id}")
 
     @staticmethod
-    def _write_json(path: Path, payload: dict[str, Any]) -> None:
+    def _write_json(path: Path, payload: dict[str, object]) -> None:
         path.write_text(
             json.dumps(payload, ensure_ascii=True, indent=2), encoding="utf-8"
         )
 
     @staticmethod
-    def _read_json(path: Path) -> dict[str, Any]:
+    def _read_json(path: Path) -> dict[str, object]:
         return json.loads(path.read_text(encoding="utf-8"))

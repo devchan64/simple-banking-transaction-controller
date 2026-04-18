@@ -1,7 +1,17 @@
+from __future__ import annotations
+
+from enum import StrEnum
+
+
 TRANSPORT_ROOT_ENV = "BANKING_TRANSPORT_ROOT"
-TRANSPORT_REQUESTS_DIR = "requests"
-TRANSPORT_RESPONSES_DIR = "responses"
 TRANSPORT_FILE_SUFFIX = ".json"
 
-WORKER_MODE_ERROR = "error"
-WORKER_MODE_SUCCESS = "success"
+
+class TransportDirectoryName(StrEnum):
+    REQUESTS = "requests"
+    RESPONSES = "responses"
+
+
+class WorkerMode(StrEnum):
+    ERROR = "error"
+    SUCCESS = "success"

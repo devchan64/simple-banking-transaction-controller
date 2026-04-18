@@ -1,14 +1,31 @@
-CARD_STATUS_ACTIVE = "ACTIVE"
-CARD_STATUS_INACTIVE = "INACTIVE"
+from __future__ import annotations
 
-COMMAND_INSERT_CARD = "INSERT_CARD"
-COMMAND_REQUEST_BALANCE = "REQUEST_BALANCE"
-COMMAND_REQUEST_WITHDRAW = "REQUEST_WITHDRAW"
+from enum import StrEnum
 
-FIELD_COMMAND_TYPE = "command_type"
-FIELD_STATUS = "status"
 
-RESULT_STATUS_OK = "ok"
+class CardStatus(StrEnum):
+    ACTIVE = "ACTIVE"
+    INACTIVE = "INACTIVE"
+
+
+class CommandType(StrEnum):
+    INSERT_CARD = "INSERT_CARD"
+    SUBMIT_PIN = "SUBMIT_PIN"
+    SELECT_ACCOUNT = "SELECT_ACCOUNT"
+    REQUEST_BALANCE = "REQUEST_BALANCE"
+    REQUEST_DEPOSIT = "REQUEST_DEPOSIT"
+    REQUEST_WITHDRAW = "REQUEST_WITHDRAW"
+    END_SESSION = "END_SESSION"
+
+
+class FieldName(StrEnum):
+    COMMAND_TYPE = "command_type"
+    STATUS = "status"
+
+
+class ResultStatus(StrEnum):
+    OK = "ok"
+
 
 ERROR_INVALID_STATE = "invalid state"
 ERROR_INVALID_PIN = "Invalid PIN"

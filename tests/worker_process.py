@@ -4,30 +4,30 @@ import sys
 
 from banking_session_controller import (
     ERROR_INVALID_STATE,
-    FIELD_COMMAND_TYPE,
-    FIELD_STATUS,
-    RESULT_STATUS_OK,
+    FieldName,
+    ResultStatus,
+    SessionCommand,
 )
-from transport import FileTransport, SessionResponseEnvelope, WORKER_MODE_ERROR
+from transport import FileTransport, SessionResponseEnvelope, WorkerMode
 
 
 class WorkerController:
-    def __init__(self, mode: str) -> None:
+    def __init__(self, mode: WorkerMode) -> None:
         self._mode = mode
 
-    def handle(self, command: dict) -> dict:
-        if self._mode == WORKER_MODE_ERROR:
+    def handle(self, command: SessionCommand) -> dict:
+        if self._mode == WorkerMode.ERROR:
             raise ValueError(ERROR_INVALID_STATE)
         return {
-            FIELD_STATUS: RESULT_STATUS_OK,
-            FIELD_COMMAND_TYPE: command.get(FIELD_COMMAND_TYPE),
+            FieldName.STATUS: ResultStatus.OK,
+            FieldName.COMMAND_TYPE: command.command_type,
         }
 
 
 def main() -> int:
     transport_root = sys.argv[1]
     request_id = sys.argv[2]
-    mode = sys.argv[3]
+    mode = WorkerMode(sys.argv[3])
 
     transport = FileTransport(transport_root)
     controller = WorkerController(mode)

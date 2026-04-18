@@ -7,23 +7,19 @@ import unittest
 from pathlib import Path
 
 from banking_session_controller import (
-    COMMAND_INSERT_CARD,
-    COMMAND_REQUEST_BALANCE,
-    COMMAND_REQUEST_WITHDRAW,
+    CommandType,
     ERROR_INVALID_STATE,
-    FIELD_COMMAND_TYPE,
-    FIELD_STATUS,
-    RESULT_STATUS_OK,
+    FieldName,
+    ResultStatus,
+    SessionCommand,
 )
 from transport import (
     DEFAULT_TRANSPORT_ROOT,
     FileTransport,
     SessionRequestEnvelope,
     TRANSPORT_FILE_SUFFIX,
-    TRANSPORT_REQUESTS_DIR,
-    TRANSPORT_RESPONSES_DIR,
-    WORKER_MODE_ERROR,
-    WORKER_MODE_SUCCESS,
+    TransportDirectoryName,
+    WorkerMode,
 )
 from spec_support import TestRootSupport, flow_text, spec_text
 
@@ -43,18 +39,18 @@ class FileTransportSpec(TestRootSupport, unittest.TestCase):
         transport = FileTransport(self.transport_root)
         request_path = (
             self.transport_root
-            / TRANSPORT_REQUESTS_DIR
+            / TransportDirectoryName.REQUESTS
             / f"req-001{TRANSPORT_FILE_SUFFIX}"
         )
         response_path = (
             self.transport_root
-            / TRANSPORT_RESPONSES_DIR
+            / TransportDirectoryName.RESPONSES
             / f"req-001{TRANSPORT_FILE_SUFFIX}"
         )
         request = SessionRequestEnvelope(
             request_id="req-001",
             session_id="session-001",
-            command={FIELD_COMMAND_TYPE: COMMAND_REQUEST_BALANCE},
+            command=SessionCommand(command_type=CommandType.REQUEST_BALANCE),
         )
 
         print(flow_text(f"transport root={self.transport_root}"))
@@ -64,7 +60,7 @@ class FileTransportSpec(TestRootSupport, unittest.TestCase):
         worker = self._start_worker_process(
             self.transport_root,
             "req-001",
-            WORKER_MODE_SUCCESS,
+            WorkerMode.SUCCESS,
         )
         started_at = time.monotonic()
         print(flow_text("2. CLI 프로세스가 request 파일 작성"))
@@ -83,8 +79,8 @@ class FileTransportSpec(TestRootSupport, unittest.TestCase):
         self.assertEqual("req-001", response.request_id)
         self.assertEqual(
             {
-                FIELD_STATUS: RESULT_STATUS_OK,
-                FIELD_COMMAND_TYPE: COMMAND_REQUEST_BALANCE,
+                FieldName.STATUS: ResultStatus.OK,
+                FieldName.COMMAND_TYPE: CommandType.REQUEST_BALANCE,
             },
             response.result,
         )
@@ -103,18 +99,18 @@ class FileTransportSpec(TestRootSupport, unittest.TestCase):
         transport = FileTransport(self.transport_root)
         request_path = (
             self.transport_root
-            / TRANSPORT_REQUESTS_DIR
+            / TransportDirectoryName.REQUESTS
             / f"req-002{TRANSPORT_FILE_SUFFIX}"
         )
         response_path = (
             self.transport_root
-            / TRANSPORT_RESPONSES_DIR
+            / TransportDirectoryName.RESPONSES
             / f"req-002{TRANSPORT_FILE_SUFFIX}"
         )
         request = SessionRequestEnvelope(
             request_id="req-002",
             session_id="session-001",
-            command={FIELD_COMMAND_TYPE: COMMAND_REQUEST_WITHDRAW},
+            command=SessionCommand(command_type=CommandType.REQUEST_WITHDRAW),
         )
 
         print(flow_text(f"transport root={self.transport_root}"))
@@ -123,7 +119,7 @@ class FileTransportSpec(TestRootSupport, unittest.TestCase):
         worker = self._start_worker_process(
             self.transport_root,
             "req-002",
-            WORKER_MODE_ERROR,
+            WorkerMode.ERROR,
         )
         started_at = time.monotonic()
         response = transport.dispatch(request)
@@ -152,18 +148,21 @@ class FileTransportSpec(TestRootSupport, unittest.TestCase):
         transport = FileTransport(self.transport_root)
         request_path = (
             self.transport_root
-            / TRANSPORT_REQUESTS_DIR
+            / TransportDirectoryName.REQUESTS
             / f"req-003{TRANSPORT_FILE_SUFFIX}"
         )
         response_path = (
             self.transport_root
-            / TRANSPORT_RESPONSES_DIR
+            / TransportDirectoryName.RESPONSES
             / f"req-003{TRANSPORT_FILE_SUFFIX}"
         )
         request = SessionRequestEnvelope(
             request_id="req-003",
             session_id=None,
-            command={FIELD_COMMAND_TYPE: COMMAND_INSERT_CARD},
+            command=SessionCommand(
+                command_type=CommandType.INSERT_CARD,
+                card_number="4000-1234-5678-0001",
+            ),
         )
 
         print(flow_text(f"transport root={self.transport_root}"))
@@ -172,7 +171,7 @@ class FileTransportSpec(TestRootSupport, unittest.TestCase):
         worker = self._start_worker_process(
             self.transport_root,
             "req-003",
-            WORKER_MODE_SUCCESS,
+            WorkerMode.SUCCESS,
         )
         started_at = time.monotonic()
         response = transport.dispatch(request)
@@ -189,18 +188,19 @@ class FileTransportSpec(TestRootSupport, unittest.TestCase):
 
         self.assertEqual(
             {
-                FIELD_STATUS: RESULT_STATUS_OK,
-                FIELD_COMMAND_TYPE: COMMAND_INSERT_CARD,
+                FieldName.STATUS: ResultStatus.OK,
+                FieldName.COMMAND_TYPE: CommandType.INSERT_CARD,
             },
             response.result,
         )
         self.assertIn('"session_id": null', request_text)
+        self.assertIn('"card_number": "4000-1234-5678-0001"', request_text)
 
     @staticmethod
     def _start_worker_process(
         transport_root: Path,
         request_id: str,
-        mode: str,
+        mode: WorkerMode,
     ) -> subprocess.Popen[str]:
         env = os.environ.copy()
         env["PYTHONPATH"] = f"src{os.pathsep}{env.get('PYTHONPATH', '')}".rstrip(
@@ -212,7 +212,7 @@ class FileTransportSpec(TestRootSupport, unittest.TestCase):
                 "tests/worker_process.py",
                 str(transport_root),
                 request_id,
-                mode,
+                str(mode),
             ],
             cwd=Path(__file__).resolve().parents[1],
             env=env,

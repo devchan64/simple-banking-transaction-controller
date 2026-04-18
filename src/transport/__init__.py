@@ -1,10 +1,8 @@
 from .contracts import (
     TRANSPORT_FILE_SUFFIX,
-    TRANSPORT_REQUESTS_DIR,
-    TRANSPORT_RESPONSES_DIR,
     TRANSPORT_ROOT_ENV,
-    WORKER_MODE_ERROR,
-    WORKER_MODE_SUCCESS,
+    TransportDirectoryName,
+    WorkerMode,
 )
 from .file_transport import (
     DEFAULT_TRANSPORT_ROOT,
@@ -20,10 +18,8 @@ __all__ = (
     "SessionRequestEnvelope",
     "SessionResponseEnvelope",
     "TRANSPORT_FILE_SUFFIX",
-    "TRANSPORT_REQUESTS_DIR",
-    "TRANSPORT_RESPONSES_DIR",
     "TRANSPORT_ROOT_ENV",
-    "WORKER_MODE_ERROR",
-    "WORKER_MODE_SUCCESS",
+    "TransportDirectoryName",
+    "WorkerMode",
     "WORKSPACE_ROOT",
 )
