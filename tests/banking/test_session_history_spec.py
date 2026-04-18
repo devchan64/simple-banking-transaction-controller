@@ -4,7 +4,7 @@ import unittest
 from pathlib import Path
 
 from banking import SessionHistoryStore
-from spec_support import TestRootSupport, spec_text
+from tests.support.spec_support import TestRootSupport, spec_text
 
 
 class SessionHistoryStoreSpec(TestRootSupport, unittest.TestCase):

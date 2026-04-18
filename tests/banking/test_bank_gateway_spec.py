@@ -10,7 +10,7 @@ from banking import (
     ERROR_INVALID_PIN,
     JsonBankGateway,
 )
-from spec_support import TestRootSupport, spec_text
+from tests.support.spec_support import TestRootSupport, spec_text
 
 
 class JsonBankGatewaySpec(TestRootSupport, unittest.TestCase):

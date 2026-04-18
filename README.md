@@ -40,3 +40,4 @@
 - 환경 준비: `./scripts/setup.sh`
 - 테스트 실행: `bash scripts/run-tests.sh`
 - 코드 포맷: `bash scripts/run-black.sh`
+- banking 서버 실행: `bash scripts/run-banking-server.sh`
