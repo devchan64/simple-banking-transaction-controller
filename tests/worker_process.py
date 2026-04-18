@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import sys
 
-from banking_session_controller import (
+from controller import (
     ERROR_INVALID_STATE,
     FieldName,
     ResultStatus,

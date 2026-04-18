@@ -6,7 +6,7 @@ import time
 import unittest
 from pathlib import Path
 
-from banking_session_controller import (
+from controller import (
     CommandType,
     ERROR_INVALID_STATE,
     FieldName,

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import unittest
 
-from banking_session_controller import (
+from controller import (
     CommandType,
     CommandValidationError,
     CommandValidator,
