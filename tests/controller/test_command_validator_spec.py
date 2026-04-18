@@ -8,7 +8,7 @@ from controller import (
     CommandValidator,
     SessionCommand,
 )
-from spec_support import TestRootSupport, spec_text
+from tests.support.spec_support import TestRootSupport, spec_text
 
 
 class CommandValidatorSpec(TestRootSupport, unittest.TestCase):

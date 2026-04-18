@@ -19,7 +19,7 @@ from controller import (
     SessionState,
     TransactionType,
 )
-from spec_support import TestRootSupport, spec_text
+from tests.support.spec_support import TestRootSupport, spec_text
 
 
 class BankingFlowControllerSpec(TestRootSupport, unittest.TestCase):

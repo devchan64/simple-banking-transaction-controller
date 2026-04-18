@@ -3,7 +3,7 @@ from __future__ import annotations
 import unittest
 
 from controller import SessionResult, SessionState, TransactionType
-from spec_support import TestRootSupport, spec_text
+from tests.support.spec_support import TestRootSupport, spec_text
 
 
 class SessionResultSpec(TestRootSupport, unittest.TestCase):
