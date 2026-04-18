@@ -36,8 +36,8 @@
 - 선택된 계좌에 금액 입금을 요청한다
 - `REQUEST_WITHDRAW`
 - 선택된 계좌에서 금액 출금을 요청한다
-- `END_SESSION`
-- 현재 세션 종료를 요청한다
+- `FORCE_END_SESSION`
+- 현재 세션 흐름을 중단하고 즉시 종료를 요청한다
 
 ## 필수 규칙
 
@@ -62,10 +62,10 @@
 - `REQUEST_BALANCE` 에 `pin` 금지
 - `REQUEST_BALANCE` 에 `account_id` 금지
 - `REQUEST_BALANCE` 에 `amount` 금지
-- `END_SESSION` 에 `card_number` 금지
-- `END_SESSION` 에 `pin` 금지
-- `END_SESSION` 에 `account_id` 금지
-- `END_SESSION` 에 `amount` 금지
+- `FORCE_END_SESSION` 에 `card_number` 금지
+- `FORCE_END_SESSION` 에 `pin` 금지
+- `FORCE_END_SESSION` 에 `account_id` 금지
+- `FORCE_END_SESSION` 에 `amount` 금지
 
 ## amount 규칙
 
@@ -79,10 +79,3 @@
 - 세션 검증은 `Controller`
 - 세션 만료 확인은 `Controller`
 - 세션 갱신 판단은 `Controller`
-
-## 구현 키워드
-
-- single input model
-- command-driven
-- fail-fast
-- explicit contract

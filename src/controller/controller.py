@@ -45,7 +45,7 @@ class BankingFlowController:
             return self._handle_deposit(session, command)
         if command.command_type == CommandType.REQUEST_WITHDRAW:
             return self._handle_withdraw(session, command)
-        if command.command_type == CommandType.END_SESSION:
+        if command.command_type == CommandType.FORCE_END_SESSION:
             return self._handle_end_session(session)
 
         raise ControllerError(f"Unsupported command_type: {command.command_type}")

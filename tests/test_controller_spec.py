@@ -4,9 +4,15 @@ import shutil
 import unittest
 from pathlib import Path
 
-from banking import JsonBankGateway, SessionHistoryStore
+from banking import (
+    ERROR_ACCOUNT_LOCKED,
+    ERROR_BANK_MAINTENANCE,
+    ERROR_INVALID_PIN,
+    JsonBankGateway,
+    SessionHistoryStore,
+)
 from controller import (
-    BankingSessionController,
+    BankingFlowController,
     CommandType,
     ControllerError,
     JsonSessionStore,
@@ -16,7 +22,7 @@ from controller import (
 from spec_support import TestRootSupport, spec_text
 
 
-class BankingSessionControllerSpec(TestRootSupport, unittest.TestCase):
+class BankingFlowControllerSpec(TestRootSupport, unittest.TestCase):
     def setUp(self) -> None:
         self.print_test_header()
         self.test_root = Path(".test-run/controller") / self._testMethodName
@@ -32,14 +38,24 @@ class BankingSessionControllerSpec(TestRootSupport, unittest.TestCase):
         shutil.copy(Path("mock-db/cards.json"), self.cards_path)
         shutil.copy(Path("mock-db/accounts.json"), self.accounts_path)
 
-        bank_gateway = JsonBankGateway(self.cards_path, self.accounts_path)
-        session_history_store = SessionHistoryStore(self.session_history_path)
-        session_store = JsonSessionStore(self.active_sessions_path)
-        self.controller = BankingSessionController(
-            bank_gateway=bank_gateway,
-            session_history_store=session_history_store,
-            session_store=session_store,
+        self.controller = self._build_controller()
+
+    def _build_controller(self, maintenance_enabled: bool = False) -> BankingFlowController:
+        self.bank_gateway = JsonBankGateway(
+            self.cards_path,
+            self.accounts_path,
+            maintenance_enabled=maintenance_enabled,
         )
+        self.session_history_store = SessionHistoryStore(self.session_history_path)
+        self.session_store = JsonSessionStore(self.active_sessions_path)
+        return BankingFlowController(
+            bank_gateway=self.bank_gateway,
+            session_history_store=self.session_history_store,
+            session_store=self.session_store,
+        )
+
+    def _stored_state(self, session_token: str) -> SessionState:
+        return self.session_store.get_session(session_token).session_state
 
     def test_insert_card_starts_session(self) -> None:
         print(spec_text("INSERT_CARD 는 세션을 시작하고 토큰을 반환한다"))
@@ -74,6 +90,30 @@ class BankingSessionControllerSpec(TestRootSupport, unittest.TestCase):
 
         self.assertEqual(SessionState.AUTHENTICATED, result.session_state)
         self.assertEqual(["account-001", "account-002"], result.available_account_ids)
+
+    def test_submit_pin_with_invalid_pin_fails(self) -> None:
+        print(spec_text("잘못된 PIN 입력은 인증 실패 메시지를 반환한다"))
+
+        session = self.controller.handle(
+            {
+                "command_type": CommandType.INSERT_CARD,
+                "card_number": "4000-1234-5678-0001",
+            }
+        )
+
+        with self.assertRaisesRegex(ControllerError, ERROR_INVALID_PIN):
+            self.controller.handle(
+                {
+                    "command_type": CommandType.SUBMIT_PIN,
+                    "session_token": session.session_token,
+                    "pin": "0000",
+                }
+            )
+
+        self.assertEqual(
+            SessionState.CARD_INSERTED,
+            self._stored_state(session.session_token),
+        )
 
     def test_select_account_before_authentication_fails(self) -> None:
         print(spec_text("인증 전 SELECT_ACCOUNT 는 실패한다"))
@@ -119,6 +159,37 @@ class BankingSessionControllerSpec(TestRootSupport, unittest.TestCase):
                 }
             )
 
+    def test_select_unknown_account_fails(self) -> None:
+        print(spec_text("카드에 없는 account_id 선택은 실패한다"))
+
+        session = self.controller.handle(
+            {
+                "command_type": CommandType.INSERT_CARD,
+                "card_number": "4000-1234-5678-0001",
+            }
+        )
+        authenticated = self.controller.handle(
+            {
+                "command_type": CommandType.SUBMIT_PIN,
+                "session_token": session.session_token,
+                "pin": "1234",
+            }
+        )
+
+        with self.assertRaisesRegex(ControllerError, "Unknown account id: account-999"):
+            self.controller.handle(
+                {
+                    "command_type": CommandType.SELECT_ACCOUNT,
+                    "session_token": authenticated.session_token,
+                    "account_id": "account-999",
+                }
+            )
+
+        self.assertEqual(
+            SessionState.AUTHENTICATED,
+            self._stored_state(authenticated.session_token),
+        )
+
     def test_balance_flow_reports_result(self) -> None:
         print(spec_text("정상 잔액 조회 흐름은 RESULT_REPORTED 로 끝난다"))
 
@@ -155,7 +226,7 @@ class BankingSessionControllerSpec(TestRootSupport, unittest.TestCase):
         self.assertEqual("account-001", result.selected_account_id)
 
     def test_withdraw_flow_updates_balance_and_allows_end_session(self) -> None:
-        print(spec_text("출금 후 결과를 보고하고 END_SESSION 으로 종료할 수 있다"))
+        print(spec_text("출금 후 결과를 보고하고 FORCE_END_SESSION 으로 종료할 수 있다"))
 
         session = self.controller.handle(
             {
@@ -186,7 +257,7 @@ class BankingSessionControllerSpec(TestRootSupport, unittest.TestCase):
         )
         closed = self.controller.handle(
             {
-                "command_type": CommandType.END_SESSION,
+                "command_type": CommandType.FORCE_END_SESSION,
                 "session_token": withdraw.session_token,
             }
         )
@@ -196,6 +267,197 @@ class BankingSessionControllerSpec(TestRootSupport, unittest.TestCase):
         self.assertEqual(1100, withdraw.balance)
         self.assertEqual(SessionState.SESSION_CLOSED, closed.session_state)
         self.assertTrue(closed.session_closed)
+
+    def test_deposit_flow_updates_balance_and_reports_result(self) -> None:
+        print(spec_text("입금 후 잔액을 갱신하고 결과를 보고한다"))
+
+        session = self.controller.handle(
+            {
+                "command_type": CommandType.INSERT_CARD,
+                "card_number": "4000-1234-5678-0001",
+            }
+        )
+        authenticated = self.controller.handle(
+            {
+                "command_type": CommandType.SUBMIT_PIN,
+                "session_token": session.session_token,
+                "pin": "1234",
+            }
+        )
+        selected = self.controller.handle(
+            {
+                "command_type": CommandType.SELECT_ACCOUNT,
+                "session_token": authenticated.session_token,
+                "account_id": "account-001",
+            }
+        )
+        deposit = self.controller.handle(
+            {
+                "command_type": CommandType.REQUEST_DEPOSIT,
+                "session_token": selected.session_token,
+                "amount": 300,
+            }
+        )
+
+        self.assertEqual(SessionState.RESULT_REPORTED, deposit.session_state)
+        self.assertEqual(TransactionType.DEPOSIT, deposit.transaction_type)
+        self.assertEqual(1500, deposit.balance)
+        self.assertEqual(300, deposit.requested_amount)
+
+    def test_withdraw_insufficient_balance_fails(self) -> None:
+        print(spec_text("잔액 부족 출금 요청은 오류를 반환한다"))
+
+        session = self.controller.handle(
+            {
+                "command_type": CommandType.INSERT_CARD,
+                "card_number": "4000-1234-5678-0004",
+            }
+        )
+        authenticated = self.controller.handle(
+            {
+                "command_type": CommandType.SUBMIT_PIN,
+                "session_token": session.session_token,
+                "pin": "1357",
+            }
+        )
+        selected = self.controller.handle(
+            {
+                "command_type": CommandType.SELECT_ACCOUNT,
+                "session_token": authenticated.session_token,
+                "account_id": "account-006",
+            }
+        )
+
+        with self.assertRaisesRegex(ControllerError, "Insufficient balance: account-006"):
+            self.controller.handle(
+                {
+                    "command_type": CommandType.REQUEST_WITHDRAW,
+                    "session_token": selected.session_token,
+                    "amount": 100,
+                }
+            )
+
+        self.assertEqual(
+            SessionState.ACCOUNT_SELECTED,
+            self._stored_state(selected.session_token),
+        )
+
+    def test_locked_account_returns_user_friendly_message(self) -> None:
+        print(spec_text("잠긴 계정은 사용자 안내 메시지로 실패한다"))
+
+        session = self.controller.handle(
+            {
+                "command_type": CommandType.INSERT_CARD,
+                "card_number": "4000-1234-5678-0005",
+            }
+        )
+
+        with self.assertRaisesRegex(ControllerError, ERROR_ACCOUNT_LOCKED):
+            self.controller.handle(
+                {
+                    "command_type": CommandType.SUBMIT_PIN,
+                    "session_token": session.session_token,
+                    "pin": "7777",
+                }
+            )
+
+    def test_bank_maintenance_returns_guidance_message(self) -> None:
+        print(spec_text("은행 점검시간에는 안내 메시지로 실패한다"))
+
+        self.controller = self._build_controller(maintenance_enabled=True)
+        session = self.controller.handle(
+            {
+                "command_type": CommandType.INSERT_CARD,
+                "card_number": "4000-1234-5678-0001",
+            }
+        )
+
+        with self.assertRaisesRegex(ControllerError, ERROR_BANK_MAINTENANCE):
+            self.controller.handle(
+                {
+                    "command_type": CommandType.SUBMIT_PIN,
+                    "session_token": session.session_token,
+                    "pin": "1234",
+                }
+            )
+
+    def test_end_session_closes_session_from_card_inserted_state(self) -> None:
+        print(spec_text("FORCE_END_SESSION 은 CARD_INSERTED 상태에서도 즉시 종료된다"))
+
+        session = self.controller.handle(
+            {
+                "command_type": CommandType.INSERT_CARD,
+                "card_number": "4000-1234-5678-0001",
+            }
+        )
+        closed = self.controller.handle(
+            {
+                "command_type": CommandType.FORCE_END_SESSION,
+                "session_token": session.session_token,
+            }
+        )
+
+        self.assertTrue(closed.session_closed)
+        self.assertEqual(SessionState.SESSION_CLOSED, closed.session_state)
+
+    def test_end_session_closes_session_from_authenticated_state(self) -> None:
+        print(spec_text("FORCE_END_SESSION 은 AUTHENTICATED 상태에서도 기존 흐름을 중단한다"))
+
+        session = self.controller.handle(
+            {
+                "command_type": CommandType.INSERT_CARD,
+                "card_number": "4000-1234-5678-0001",
+            }
+        )
+        authenticated = self.controller.handle(
+            {
+                "command_type": CommandType.SUBMIT_PIN,
+                "session_token": session.session_token,
+                "pin": "1234",
+            }
+        )
+        closed = self.controller.handle(
+            {
+                "command_type": CommandType.FORCE_END_SESSION,
+                "session_token": authenticated.session_token,
+            }
+        )
+
+        self.assertTrue(closed.session_closed)
+        self.assertEqual(SessionState.SESSION_CLOSED, closed.session_state)
+
+    def test_end_session_closes_session_from_account_selected_state(self) -> None:
+        print(spec_text("FORCE_END_SESSION 은 ACCOUNT_SELECTED 상태에서도 기존 흐름을 중단한다"))
+
+        session = self.controller.handle(
+            {
+                "command_type": CommandType.INSERT_CARD,
+                "card_number": "4000-1234-5678-0001",
+            }
+        )
+        authenticated = self.controller.handle(
+            {
+                "command_type": CommandType.SUBMIT_PIN,
+                "session_token": session.session_token,
+                "pin": "1234",
+            }
+        )
+        selected = self.controller.handle(
+            {
+                "command_type": CommandType.SELECT_ACCOUNT,
+                "session_token": authenticated.session_token,
+                "account_id": "account-001",
+            }
+        )
+        closed = self.controller.handle(
+            {
+                "command_type": CommandType.FORCE_END_SESSION,
+                "session_token": selected.session_token,
+            }
+        )
+
+        self.assertTrue(closed.session_closed)
+        self.assertEqual(SessionState.SESSION_CLOSED, closed.session_state)
 
     def test_closed_session_rejects_followup_command(self) -> None:
         print(spec_text("종료된 세션은 이후 입력을 거부한다"))
@@ -208,7 +470,7 @@ class BankingSessionControllerSpec(TestRootSupport, unittest.TestCase):
         )
         closed = self.controller.handle(
             {
-                "command_type": CommandType.END_SESSION,
+                "command_type": CommandType.FORCE_END_SESSION,
                 "session_token": session.session_token,
             }
         )

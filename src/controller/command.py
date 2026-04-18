@@ -76,7 +76,7 @@ class CommandValidator:
             cls._require_absent(command.account_id, "account_id")
             return command
 
-        if command.command_type == CommandType.END_SESSION:
+        if command.command_type == CommandType.FORCE_END_SESSION:
             cls._require_absent(command.card_number, "card_number")
             cls._require_absent(command.pin, "pin")
             cls._require_absent(command.account_id, "account_id")
