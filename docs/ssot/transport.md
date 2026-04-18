@@ -5,6 +5,7 @@
 - controller 호출 감싸기
 - 테스트 흐름 유지
 - 최대한 단순하게 구현
+- 이후 transport 교체 대비
 
 ## 방식
 
@@ -39,13 +40,10 @@
 - pass-through
 - exception mapping
 - no business logic
+- replaceable boundary
 
 ## 금지
 
 - 비즈니스 로직 수행
 - 상태 판단
 - 입력 해석
-
-## 한 줄 정의
-
-Transport는 controller 호출만 넘겨주는 작은 pass-through 계층이다.

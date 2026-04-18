@@ -4,7 +4,7 @@
 
 - CLI 도구
 - controller 검증 지원
-- 테스트 입력 실행
+- 최소 흐름 실행
 
 ## 성격
 
@@ -26,6 +26,15 @@
 - transport 호출
 - 결과 표시
 
+## 구현 기준
+
+- 카드 입력
+- PIN 입력
+- 계좌 선택
+- 잔액 조회 선택
+- 입금 선택
+- 출금 선택
+
 ## 구현 키워드
 
 - cli tool
@@ -34,7 +43,3 @@
 - interactive input
 - command conversion
 
-
-## 한 줄 정의
-
-Prompt Adapter는 controller 테스트를 위해 사용하는 가벼운 CLI 보조 도구이다.

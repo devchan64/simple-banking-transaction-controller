@@ -5,6 +5,8 @@
 - controller 검증 지원
 - 최소 mock 데이터 제공
 - 최소 세션 정보 보관
+- 최소 흐름 지원
+- 이후 저장 방식 교체 대비
 
 ## 방식
 
@@ -28,6 +30,14 @@
 - 세션 유효 여부 확인
 - 세션 갱신 반영
 
+## 구현 기준
+
+- 카드 찾기
+- 카드의 계좌 목록 찾기
+- 계좌 잔액 읽기
+- 입금 후 잔액 저장
+- 출금 후 잔액 저장
+
 ## 구현 키워드
 
 - lightweight storage
@@ -35,13 +45,10 @@
 - json file store
 - session expiration
 - session refresh
+- replaceable boundary
 
 ## 금지
 
 - 큰 저장소 설계
 - prompt 처리
 - business rule 재해석
-
-## 한 줄 정의
-
-Persistence는 controller 검증에 필요한 최소 데이터만 보관하는 작은 mock 저장 계층이다.

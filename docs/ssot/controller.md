@@ -72,7 +72,3 @@
 - 사용자 입력 파싱
 - transport 처리
 - repository 직접 접근
-
-## 한 줄 정의
-
-Controller는 persistence 에 저장된 세션을 확인하고 갱신하면서 세션 규칙과 상태 전이를 전담하는 핵심 계층이다.
