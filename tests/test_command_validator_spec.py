@@ -8,10 +8,13 @@ from controller import (
     CommandValidator,
     SessionCommand,
 )
-from spec_support import spec_text
+from spec_support import TestRootSupport, spec_text
 
 
-class CommandValidatorSpec(unittest.TestCase):
+class CommandValidatorSpec(TestRootSupport, unittest.TestCase):
+    def setUp(self) -> None:
+        self.print_test_header()
+
     def test_insert_card_requires_card_number(self) -> None:
         print(spec_text("INSERT_CARD 는 card_number 가 필요하다"))
 

@@ -9,6 +9,7 @@ from spec_support import TestRootSupport, spec_text
 
 class SessionHistoryStoreSpec(TestRootSupport, unittest.TestCase):
     def setUp(self) -> None:
+        self.print_test_header()
         test_root = Path(".test-run/session") / self._testMethodName
         self.reset_test_root(test_root, "session test_root")
         self.sessions_path = test_root / "sessions.json"

@@ -15,6 +15,7 @@ from spec_support import TestRootSupport, spec_text
 
 class JsonBankGatewaySpec(TestRootSupport, unittest.TestCase):
     def setUp(self) -> None:
+        self.print_test_header()
         self.test_root = Path(".test-run/bank-gateway") / self._testMethodName
         # 이전 테스트 산출물을 지워서 매 테스트가 같은 JSON 상태에서 시작되게 한다.
         self.reset_test_root(self.test_root)

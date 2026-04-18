@@ -7,6 +7,7 @@ RESET = "\033[0m"
 BLUE = "\033[94m"
 GREEN = "\033[92m"
 YELLOW = "\033[93m"
+MAGENTA = "\033[95m"
 
 
 def _tag(color: str, label: str) -> str:
@@ -26,6 +27,12 @@ def flow_text(message: str) -> str:
 
 
 class TestRootSupport:
+    def print_test_header(self) -> None:
+        print(
+            f"\n{_tag(MAGENTA, '테스트')} "
+            f"{self.__class__.__name__}.{self._testMethodName}"
+        )
+
     def reset_test_root(self, test_root: Path, label: str = "test_root") -> Path:
         print(init_text(f"{label} 삭제={test_root}"))
         shutil.rmtree(test_root, ignore_errors=True)

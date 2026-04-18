@@ -3,10 +3,13 @@ from __future__ import annotations
 import unittest
 
 from controller import SessionResult, SessionState, TransactionType
-from spec_support import spec_text
+from spec_support import TestRootSupport, spec_text
 
 
-class SessionResultSpec(unittest.TestCase):
+class SessionResultSpec(TestRootSupport, unittest.TestCase):
+    def setUp(self) -> None:
+        self.print_test_header()
+
     def test_session_result_requires_core_fields(self) -> None:
         print(spec_text("SessionResult 는 핵심 필드를 반드시 포함해야 한다"))
 

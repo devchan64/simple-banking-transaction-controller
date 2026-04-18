@@ -26,6 +26,7 @@ from spec_support import TestRootSupport, flow_text, spec_text
 
 class FileTransportSpec(TestRootSupport, unittest.TestCase):
     def setUp(self) -> None:
+        self.print_test_header()
         self.transport_root = Path(".test-run/transport") / self._testMethodName
         self.reset_test_root(self.transport_root, "transport test_root")
 
