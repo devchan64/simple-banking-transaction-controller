@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import subprocess
 import time
 import unittest
@@ -17,14 +16,18 @@ from transport import (
     TRANSPORT_FILE_SUFFIX,
     TransportDirectoryName,
 )
+from tests.support.process_support import ModuleProcessSupport
 from tests.support.spec_support import TestRootSupport, flow_text, spec_text
 
 
-class FileTransportSpec(TestRootSupport, unittest.TestCase):
+class FileTransportSpec(ModuleProcessSupport, TestRootSupport, unittest.TestCase):
     def setUp(self) -> None:
         self.print_test_header()
-        self.transport_root = Path(".test-run/transport") / self._testMethodName
-        self.reset_test_root(self.transport_root, "transport test_root")
+        self.test_root = Path(".test-run/transport") / self._testMethodName
+        self.reset_test_root(self.test_root, "transport test_root")
+        self.transport_root = self.test_root / "transport"
+        self.controller_root = self.test_root / "controller"
+        self.banking_root = self.test_root / "banking"
 
     def test_dispatch_writes_request_and_returns_response_file_result(self) -> None:
         # 정상 흐름: 서로 다른 두 프로세스가 request/response 파일로 통신해야 한다.
@@ -57,6 +60,7 @@ class FileTransportSpec(TestRootSupport, unittest.TestCase):
         print(flow_text(f"request 파일 생성 위치={request_path}"))
         print(flow_text(f"response 파일 생성 위치={response_path}"))
         print(flow_text("1. worker 프로세스 시작"))
+        banking_server = self._start_banking_server()
         worker = self._start_worker_process(
             self.transport_root,
             "req-001",
@@ -66,6 +70,8 @@ class FileTransportSpec(TestRootSupport, unittest.TestCase):
         response = transport.dispatch(request)
         elapsed_ms = (time.monotonic() - started_at) * 1000
         worker.wait(timeout=5)
+        banking_server.terminate()
+        banking_server.wait(timeout=5)
         print(flow_text("3. worker 프로세스가 request 파일 읽기"))
         print(flow_text("4. worker 프로세스가 response 파일 작성"))
         print(flow_text("5. CLI 프로세스가 response 파일 읽기"))
@@ -116,6 +122,7 @@ class FileTransportSpec(TestRootSupport, unittest.TestCase):
         print(flow_text(f"transport root={self.transport_root}"))
         print(flow_text(f"request 파일 생성 위치={request_path}"))
         print(flow_text(f"response 파일 생성 위치={response_path}"))
+        banking_server = self._start_banking_server()
         worker = self._start_worker_process(
             self.transport_root,
             "req-002",
@@ -124,6 +131,8 @@ class FileTransportSpec(TestRootSupport, unittest.TestCase):
         response = transport.dispatch(request)
         elapsed_ms = (time.monotonic() - started_at) * 1000
         worker.wait(timeout=5)
+        banking_server.terminate()
+        banking_server.wait(timeout=5)
 
         print(spec_text(f"응답={response}"))
         print(spec_text(f"왕복 지연시간={elapsed_ms:.3f}ms"))
@@ -167,6 +176,7 @@ class FileTransportSpec(TestRootSupport, unittest.TestCase):
         print(flow_text(f"transport root={self.transport_root}"))
         print(flow_text(f"request 파일 생성 위치={request_path}"))
         print(flow_text(f"response 파일 생성 위치={response_path}"))
+        banking_server = self._start_banking_server()
         worker = self._start_worker_process(
             self.transport_root,
             "req-003",
@@ -175,6 +185,8 @@ class FileTransportSpec(TestRootSupport, unittest.TestCase):
         response = transport.dispatch(request)
         elapsed_ms = (time.monotonic() - started_at) * 1000
         worker.wait(timeout=5)
+        banking_server.terminate()
+        banking_server.wait(timeout=5)
 
         request_text = request_path.read_text(encoding="utf-8")
 
@@ -189,24 +201,25 @@ class FileTransportSpec(TestRootSupport, unittest.TestCase):
         self.assertIn('"session_id": null', request_text)
         self.assertIn('"card_number": "4000-1234-5678-0001"', request_text)
 
-    @staticmethod
+    def _start_banking_server(self) -> subprocess.Popen[str]:
+        return self.start_module("banking", self.banking_root)
+
     def _start_worker_process(
+        self,
         transport_root: Path,
         request_id: str,
     ) -> subprocess.Popen[str]:
-        env = os.environ.copy()
-        env["PYTHONPATH"] = f"src{os.pathsep}{env.get('PYTHONPATH', '')}".rstrip(
-            os.pathsep
-        )
         return subprocess.Popen(
             [
                 "python3",
                 "tests/transport/worker_process.py",
                 str(transport_root),
                 request_id,
+                str(self.controller_root),
+                str(self.banking_root),
             ],
-            cwd=Path(__file__).resolve().parents[2],
-            env=env,
+            cwd=self.repo_root(),
+            env=self.python_env(),
             text=True,
         )
 

@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from banking import (
+    BankGateway,
     BankGatewayError,
     ERROR_PIN_ATTEMPTS_EXCEEDED,
-    JsonBankGateway,
     PinVerificationError,
     SessionHistoryStore,
 )
@@ -21,7 +21,7 @@ class ControllerError(RuntimeError):
 class BankingFlowController:
     def __init__(
         self,
-        bank_gateway: JsonBankGateway,
+        bank_gateway: BankGateway,
         session_history_store: SessionHistoryStore,
         session_store: JsonSessionStore,
     ) -> None:

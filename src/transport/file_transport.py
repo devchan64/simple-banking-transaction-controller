@@ -19,7 +19,7 @@ WORKSPACE_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_TRANSPORT_ROOT = Path(
     os.environ.get(
         TRANSPORT_ROOT_ENV,
-        str(WORKSPACE_ROOT / ".transport" / "runtime"),
+        str(WORKSPACE_ROOT / ".transport"),
     )
 )
 
