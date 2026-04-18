@@ -25,7 +25,7 @@ from transport import (
     WORKER_MODE_ERROR,
     WORKER_MODE_SUCCESS,
 )
-from spec_support import TestRootSupport
+from spec_support import TestRootSupport, flow_text, spec_text
 
 
 class FileTransportSpec(TestRootSupport, unittest.TestCase):
@@ -36,7 +36,9 @@ class FileTransportSpec(TestRootSupport, unittest.TestCase):
     def test_dispatch_writes_request_and_returns_response_file_result(self) -> None:
         # 정상 흐름: 서로 다른 두 프로세스가 request/response 파일로 통신해야 한다.
         print(
-            "[스펙] 두 개의 프로세스가 request/response 파일로 성공 응답을 주고받는다"
+            spec_text(
+                "두 개의 프로세스가 request/response 파일로 성공 응답을 주고받는다"
+            )
         )
         transport = FileTransport(self.transport_root)
         request_path = (
@@ -55,28 +57,28 @@ class FileTransportSpec(TestRootSupport, unittest.TestCase):
             command={FIELD_COMMAND_TYPE: COMMAND_REQUEST_BALANCE},
         )
 
-        print(f"[흐름] transport root={self.transport_root}")
-        print(f"[흐름] request 파일 생성 위치={request_path}")
-        print(f"[흐름] response 파일 생성 위치={response_path}")
-        print("[흐름] 1. worker 프로세스 시작")
+        print(flow_text(f"transport root={self.transport_root}"))
+        print(flow_text(f"request 파일 생성 위치={request_path}"))
+        print(flow_text(f"response 파일 생성 위치={response_path}"))
+        print(flow_text("1. worker 프로세스 시작"))
         worker = self._start_worker_process(
             self.transport_root,
             "req-001",
             WORKER_MODE_SUCCESS,
         )
         started_at = time.monotonic()
-        print("[흐름] 2. CLI 프로세스가 request 파일 작성")
+        print(flow_text("2. CLI 프로세스가 request 파일 작성"))
         response = transport.dispatch(request)
         elapsed_ms = (time.monotonic() - started_at) * 1000
         worker.wait(timeout=5)
-        print("[흐름] 3. worker 프로세스가 request 파일 읽기")
-        print("[흐름] 4. worker 프로세스가 response 파일 작성")
-        print("[흐름] 5. CLI 프로세스가 response 파일 읽기")
+        print(flow_text("3. worker 프로세스가 request 파일 읽기"))
+        print(flow_text("4. worker 프로세스가 response 파일 작성"))
+        print(flow_text("5. CLI 프로세스가 response 파일 읽기"))
 
-        print(f"[스펙] 응답={response}")
-        print(f"[스펙] 왕복 지연시간={elapsed_ms:.3f}ms")
-        print(f"[스펙] request 파일 존재 여부={request_path.exists()}")
-        print(f"[스펙] response 파일 존재 여부={response_path.exists()}")
+        print(spec_text(f"응답={response}"))
+        print(spec_text(f"왕복 지연시간={elapsed_ms:.3f}ms"))
+        print(spec_text(f"request 파일 존재 여부={request_path.exists()}"))
+        print(spec_text(f"response 파일 존재 여부={response_path.exists()}"))
 
         self.assertEqual("req-001", response.request_id)
         self.assertEqual(
@@ -94,7 +96,9 @@ class FileTransportSpec(TestRootSupport, unittest.TestCase):
     def test_dispatch_maps_controller_exception_to_error_response_file(self) -> None:
         # 실패 흐름: 별도 프로세스의 controller 예외는 response 파일 error 필드로 기록되어야 한다.
         print(
-            "[스펙] controller 프로세스 예외를 response 파일의 error 응답으로 변환한다"
+            spec_text(
+                "controller 프로세스 예외를 response 파일의 error 응답으로 변환한다"
+            )
         )
         transport = FileTransport(self.transport_root)
         request_path = (
@@ -113,9 +117,9 @@ class FileTransportSpec(TestRootSupport, unittest.TestCase):
             command={FIELD_COMMAND_TYPE: COMMAND_REQUEST_WITHDRAW},
         )
 
-        print(f"[흐름] transport root={self.transport_root}")
-        print(f"[흐름] request 파일 생성 위치={request_path}")
-        print(f"[흐름] response 파일 생성 위치={response_path}")
+        print(flow_text(f"transport root={self.transport_root}"))
+        print(flow_text(f"request 파일 생성 위치={request_path}"))
+        print(flow_text(f"response 파일 생성 위치={response_path}"))
         worker = self._start_worker_process(
             self.transport_root,
             "req-002",
@@ -126,10 +130,10 @@ class FileTransportSpec(TestRootSupport, unittest.TestCase):
         elapsed_ms = (time.monotonic() - started_at) * 1000
         worker.wait(timeout=5)
 
-        print(f"[스펙] 응답={response}")
-        print(f"[스펙] 왕복 지연시간={elapsed_ms:.3f}ms")
-        print(f"[스펙] request 파일 존재 여부={request_path.exists()}")
-        print(f"[스펙] response 파일 존재 여부={response_path.exists()}")
+        print(spec_text(f"응답={response}"))
+        print(spec_text(f"왕복 지연시간={elapsed_ms:.3f}ms"))
+        print(spec_text(f"request 파일 존재 여부={request_path.exists()}"))
+        print(spec_text(f"response 파일 존재 여부={response_path.exists()}"))
 
         self.assertEqual("req-002", response.request_id)
         self.assertIsNone(response.result)
@@ -141,7 +145,9 @@ class FileTransportSpec(TestRootSupport, unittest.TestCase):
     ) -> None:
         # transport는 두 프로세스 사이에서 session_id를 판단하지 않고 그대로 전달해야 한다.
         print(
-            "[스펙] session_id는 두 프로세스 사이에서 재해석하지 않고 그대로 유지한다"
+            spec_text(
+                "session_id는 두 프로세스 사이에서 재해석하지 않고 그대로 유지한다"
+            )
         )
         transport = FileTransport(self.transport_root)
         request_path = (
@@ -160,9 +166,9 @@ class FileTransportSpec(TestRootSupport, unittest.TestCase):
             command={FIELD_COMMAND_TYPE: COMMAND_INSERT_CARD},
         )
 
-        print(f"[흐름] transport root={self.transport_root}")
-        print(f"[흐름] request 파일 생성 위치={request_path}")
-        print(f"[흐름] response 파일 생성 위치={response_path}")
+        print(flow_text(f"transport root={self.transport_root}"))
+        print(flow_text(f"request 파일 생성 위치={request_path}"))
+        print(flow_text(f"response 파일 생성 위치={response_path}"))
         worker = self._start_worker_process(
             self.transport_root,
             "req-003",
@@ -175,11 +181,11 @@ class FileTransportSpec(TestRootSupport, unittest.TestCase):
 
         request_text = request_path.read_text(encoding="utf-8")
 
-        print(f"[스펙] 응답={response}")
-        print(f"[스펙] request 파일={request_text}")
-        print(f"[스펙] 왕복 지연시간={elapsed_ms:.3f}ms")
-        print(f"[스펙] request 파일 존재 여부={request_path.exists()}")
-        print(f"[스펙] response 파일 존재 여부={response_path.exists()}")
+        print(spec_text(f"응답={response}"))
+        print(spec_text(f"request 파일={request_text}"))
+        print(spec_text(f"왕복 지연시간={elapsed_ms:.3f}ms"))
+        print(spec_text(f"request 파일 존재 여부={request_path.exists()}"))
+        print(spec_text(f"response 파일 존재 여부={response_path.exists()}"))
 
         self.assertEqual(
             {
