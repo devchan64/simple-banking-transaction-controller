@@ -13,4 +13,7 @@ fi
 rm -rf .test-run
 mkdir -p .test-run
 
-PYTHONPATH=src python -m unittest discover -s tests
+echo "[test-e2e] running E2E specs"
+
+PYTHONPATH=src:. python3 -m unittest \
+    tests.e2e.test_flow_e2e_spec

@@ -38,6 +38,33 @@
 ## 실행
 
 - 환경 준비: `./scripts/setup.sh`
-- 테스트 실행: `bash scripts/run-tests.sh`
 - 코드 포맷: `bash scripts/run-black.sh`
+
+## 테스트
+
+- 기본 테스트 실행: `bash scripts/test-basic.sh`
+- E2E 테스트 실행: `bash scripts/test-e2e.sh`
+- 전체 테스트 실행: `bash scripts/test-all.sh`
+
+기본 테스트 범위:
+- `tests/banking`
+- `tests/controller`
+- `tests/transport`
+
+E2E 테스트 범위:
+- `tests/e2e`
+
+## 서버 구동
+
 - banking 서버 실행: `bash scripts/run-banking-server.sh`
+- controller 서버 실행: `bash scripts/run-controller-server.sh`
+
+포어그라운드 실행 예:
+```bash
+bash scripts/run-banking-server.sh
+```
+
+다른 터미널에서 controller 서버 실행:
+```bash
+bash scripts/run-controller-server.sh
+```
