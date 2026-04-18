@@ -1,43 +1,53 @@
 from __future__ import annotations
 
+import shutil
 import sys
+from pathlib import Path
 
 from controller import (
-    ERROR_INVALID_STATE,
-    FieldName,
-    ResultStatus,
+    BankingFlowController,
+    ControllerError,
+    JsonSessionStore,
     SessionCommand,
 )
-from transport import FileTransport, SessionResponseEnvelope, WorkerMode
+from banking import JsonBankGateway, SessionHistoryStore
+from transport import FileTransport, SessionResponseEnvelope
 
 
-class WorkerController:
-    def __init__(self, mode: WorkerMode) -> None:
-        self._mode = mode
+def build_controller(runtime_root: Path) -> BankingFlowController:
+    mock_db_root = runtime_root / "mock-db"
+    mock_db_root.mkdir(parents=True, exist_ok=True)
 
-    def handle(self, command: SessionCommand) -> dict:
-        if self._mode == WorkerMode.ERROR:
-            raise ValueError(ERROR_INVALID_STATE)
-        return {
-            FieldName.STATUS: ResultStatus.OK,
-            FieldName.COMMAND_TYPE: command.command_type,
-        }
+    cards_path = mock_db_root / "cards.json"
+    accounts_path = mock_db_root / "accounts.json"
+    if not cards_path.exists():
+        shutil.copy(Path("mock-db/cards.json"), cards_path)
+    if not accounts_path.exists():
+        shutil.copy(Path("mock-db/accounts.json"), accounts_path)
+
+    session_history_path = runtime_root / "session-history.json"
+    active_sessions_path = runtime_root / "active-sessions.json"
+
+    return BankingFlowController(
+        bank_gateway=JsonBankGateway(cards_path, accounts_path),
+        session_history_store=SessionHistoryStore(session_history_path),
+        session_store=JsonSessionStore(active_sessions_path),
+    )
 
 
 def main() -> int:
     transport_root = sys.argv[1]
     request_id = sys.argv[2]
-    mode = WorkerMode(sys.argv[3])
 
     transport = FileTransport(transport_root)
-    controller = WorkerController(mode)
+    controller = build_controller(Path(transport_root))
     request = transport.wait_for_request(request_id)
 
     try:
         result = controller.handle(request.command)
         response = SessionResponseEnvelope(
             request_id=request.request_id,
-            result=result,
+            result=result.model_dump(mode="json"),
         )
     except Exception as exc:
         response = SessionResponseEnvelope(

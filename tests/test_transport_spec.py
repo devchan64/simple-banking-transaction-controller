@@ -8,18 +8,14 @@ from pathlib import Path
 
 from controller import (
     CommandType,
-    ERROR_INVALID_STATE,
-    FieldName,
-    ResultStatus,
     SessionCommand,
+    SessionState,
 )
 from transport import (
-    DEFAULT_TRANSPORT_ROOT,
     FileTransport,
     SessionRequestEnvelope,
     TRANSPORT_FILE_SUFFIX,
     TransportDirectoryName,
-    WorkerMode,
 )
 from spec_support import TestRootSupport, flow_text, spec_text
 
@@ -50,8 +46,11 @@ class FileTransportSpec(TestRootSupport, unittest.TestCase):
         )
         request = SessionRequestEnvelope(
             request_id="req-001",
-            session_id="session-001",
-            command=SessionCommand(command_type=CommandType.REQUEST_BALANCE),
+            session_id=None,
+            command=SessionCommand(
+                command_type=CommandType.INSERT_CARD,
+                card_number="4000-1234-5678-0001",
+            ),
         )
 
         print(flow_text(f"transport root={self.transport_root}"))
@@ -61,7 +60,6 @@ class FileTransportSpec(TestRootSupport, unittest.TestCase):
         worker = self._start_worker_process(
             self.transport_root,
             "req-001",
-            WorkerMode.SUCCESS,
         )
         started_at = time.monotonic()
         print(flow_text("2. CLI 프로세스가 request 파일 작성"))
@@ -78,13 +76,10 @@ class FileTransportSpec(TestRootSupport, unittest.TestCase):
         print(spec_text(f"response 파일 존재 여부={response_path.exists()}"))
 
         self.assertEqual("req-001", response.request_id)
-        self.assertEqual(
-            {
-                FieldName.STATUS: ResultStatus.OK,
-                FieldName.COMMAND_TYPE: CommandType.REQUEST_BALANCE,
-            },
-            response.result,
-        )
+        self.assertEqual("SESSION_STARTED", response.result["status_code"])
+        self.assertEqual(SessionState.CARD_INSERTED, response.result["session_state"])
+        self.assertEqual(False, response.result["session_closed"])
+        self.assertTrue(response.result["session_token"])
         self.assertIsNone(response.error_code)
         self.assertIsNone(response.error_message)
         self.assertTrue(request_path.exists())
@@ -111,7 +106,11 @@ class FileTransportSpec(TestRootSupport, unittest.TestCase):
         request = SessionRequestEnvelope(
             request_id="req-002",
             session_id="session-001",
-            command=SessionCommand(command_type=CommandType.REQUEST_WITHDRAW),
+            command=SessionCommand(
+                command_type=CommandType.REQUEST_WITHDRAW,
+                session_token="session-unknown",
+                amount=100,
+            ),
         )
 
         print(flow_text(f"transport root={self.transport_root}"))
@@ -120,7 +119,6 @@ class FileTransportSpec(TestRootSupport, unittest.TestCase):
         worker = self._start_worker_process(
             self.transport_root,
             "req-002",
-            WorkerMode.ERROR,
         )
         started_at = time.monotonic()
         response = transport.dispatch(request)
@@ -134,8 +132,8 @@ class FileTransportSpec(TestRootSupport, unittest.TestCase):
 
         self.assertEqual("req-002", response.request_id)
         self.assertIsNone(response.result)
-        self.assertEqual("ValueError", response.error_code)
-        self.assertEqual(ERROR_INVALID_STATE, response.error_message)
+        self.assertEqual("ControllerError", response.error_code)
+        self.assertEqual("Unknown session token: session-unknown", response.error_message)
 
     def test_dispatch_keeps_session_id_in_request_file_without_reinterpretation(
         self,
@@ -172,7 +170,6 @@ class FileTransportSpec(TestRootSupport, unittest.TestCase):
         worker = self._start_worker_process(
             self.transport_root,
             "req-003",
-            WorkerMode.SUCCESS,
         )
         started_at = time.monotonic()
         response = transport.dispatch(request)
@@ -187,13 +184,8 @@ class FileTransportSpec(TestRootSupport, unittest.TestCase):
         print(spec_text(f"request 파일 존재 여부={request_path.exists()}"))
         print(spec_text(f"response 파일 존재 여부={response_path.exists()}"))
 
-        self.assertEqual(
-            {
-                FieldName.STATUS: ResultStatus.OK,
-                FieldName.COMMAND_TYPE: CommandType.INSERT_CARD,
-            },
-            response.result,
-        )
+        self.assertEqual("SESSION_STARTED", response.result["status_code"])
+        self.assertEqual(SessionState.CARD_INSERTED, response.result["session_state"])
         self.assertIn('"session_id": null', request_text)
         self.assertIn('"card_number": "4000-1234-5678-0001"', request_text)
 
@@ -201,7 +193,6 @@ class FileTransportSpec(TestRootSupport, unittest.TestCase):
     def _start_worker_process(
         transport_root: Path,
         request_id: str,
-        mode: WorkerMode,
     ) -> subprocess.Popen[str]:
         env = os.environ.copy()
         env["PYTHONPATH"] = f"src{os.pathsep}{env.get('PYTHONPATH', '')}".rstrip(
@@ -213,7 +204,6 @@ class FileTransportSpec(TestRootSupport, unittest.TestCase):
                 "tests/worker_process.py",
                 str(transport_root),
                 request_id,
-                str(mode),
             ],
             cwd=Path(__file__).resolve().parents[1],
             env=env,
