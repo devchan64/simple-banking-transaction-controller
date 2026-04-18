@@ -3,7 +3,7 @@ from __future__ import annotations
 import unittest
 from pathlib import Path
 
-from banking_session_controller import SessionHistoryStore
+from banking import SessionHistoryStore
 from spec_support import TestRootSupport, spec_text
 
 

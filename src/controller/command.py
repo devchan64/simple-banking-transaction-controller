@@ -3,9 +3,8 @@ from __future__ import annotations
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, StrictInt, ValidationError
-from .contracts import (
-    CommandType,
-)
+
+from .contracts import CommandType
 
 
 class CommandValidationError(RuntimeError):

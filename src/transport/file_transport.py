@@ -7,7 +7,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict
 
-from banking_session_controller.command import SessionCommand
+from controller import SessionCommand
 
 from .contracts import (
     TRANSPORT_FILE_SUFFIX,

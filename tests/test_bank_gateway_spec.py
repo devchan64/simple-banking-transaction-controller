@@ -4,7 +4,7 @@ import json
 import unittest
 from pathlib import Path
 
-from banking_session_controller import (
+from banking import (
     BankGatewayError,
     CardStatus,
     ERROR_INVALID_PIN,

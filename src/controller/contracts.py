@@ -3,11 +3,6 @@ from __future__ import annotations
 from enum import StrEnum
 
 
-class CardStatus(StrEnum):
-    ACTIVE = "ACTIVE"
-    INACTIVE = "INACTIVE"
-
-
 class CommandType(StrEnum):
     INSERT_CARD = "INSERT_CARD"
     SUBMIT_PIN = "SUBMIT_PIN"
@@ -27,5 +22,20 @@ class ResultStatus(StrEnum):
     OK = "ok"
 
 
+class SessionState(StrEnum):
+    IDLE = "IDLE"
+    CARD_INSERTED = "CARD_INSERTED"
+    AUTHENTICATED = "AUTHENTICATED"
+    ACCOUNT_SELECTED = "ACCOUNT_SELECTED"
+    TRANSACTION_EXECUTED = "TRANSACTION_EXECUTED"
+    RESULT_REPORTED = "RESULT_REPORTED"
+    SESSION_CLOSED = "SESSION_CLOSED"
+
+
+class TransactionType(StrEnum):
+    BALANCE = "BALANCE"
+    DEPOSIT = "DEPOSIT"
+    WITHDRAW = "WITHDRAW"
+
+
 ERROR_INVALID_STATE = "invalid state"
-ERROR_INVALID_PIN = "Invalid PIN"
