@@ -6,7 +6,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 cd "$ROOT_DIR"
 
-rm -rf .transport/test-run
-mkdir -p .transport/test-run
+rm -rf .test-run
+mkdir -p .test-run
 
 PYTHONPATH=src python3 -m unittest discover -s tests

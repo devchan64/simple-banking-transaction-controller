@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import os
-import shutil
 import subprocess
 import time
 import unittest
@@ -12,13 +11,13 @@ from transport import (
     FileTransport,
     SessionRequestEnvelope,
 )
+from spec_support import TestRootSupport
 
 
-class FileTransportSpec(unittest.TestCase):
+class FileTransportSpec(TestRootSupport, unittest.TestCase):
     def setUp(self) -> None:
-        self.transport_root = DEFAULT_TRANSPORT_ROOT / "test-run" / self._testMethodName
-        shutil.rmtree(self.transport_root, ignore_errors=True)
-        self.transport_root.mkdir(parents=True, exist_ok=True)
+        self.transport_root = Path(".test-run/transport") / self._testMethodName
+        self.reset_test_root(self.transport_root, "transport test_root")
 
     def test_dispatch_writes_request_and_returns_response_file_result(self) -> None:
         # 정상 흐름: 서로 다른 두 프로세스가 request/response 파일로 통신해야 한다.
