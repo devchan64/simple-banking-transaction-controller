@@ -40,7 +40,9 @@ class FileTransportSpec(TestRootSupport, unittest.TestCase):
         )
         transport = FileTransport(self.transport_root)
         request_path = (
-            self.transport_root / TRANSPORT_REQUESTS_DIR / f"req-001{TRANSPORT_FILE_SUFFIX}"
+            self.transport_root
+            / TRANSPORT_REQUESTS_DIR
+            / f"req-001{TRANSPORT_FILE_SUFFIX}"
         )
         response_path = (
             self.transport_root
@@ -96,7 +98,9 @@ class FileTransportSpec(TestRootSupport, unittest.TestCase):
         )
         transport = FileTransport(self.transport_root)
         request_path = (
-            self.transport_root / TRANSPORT_REQUESTS_DIR / f"req-002{TRANSPORT_FILE_SUFFIX}"
+            self.transport_root
+            / TRANSPORT_REQUESTS_DIR
+            / f"req-002{TRANSPORT_FILE_SUFFIX}"
         )
         response_path = (
             self.transport_root
@@ -141,7 +145,9 @@ class FileTransportSpec(TestRootSupport, unittest.TestCase):
         )
         transport = FileTransport(self.transport_root)
         request_path = (
-            self.transport_root / TRANSPORT_REQUESTS_DIR / f"req-003{TRANSPORT_FILE_SUFFIX}"
+            self.transport_root
+            / TRANSPORT_REQUESTS_DIR
+            / f"req-003{TRANSPORT_FILE_SUFFIX}"
         )
         response_path = (
             self.transport_root
