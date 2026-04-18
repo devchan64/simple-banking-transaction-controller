@@ -4,6 +4,8 @@ import sys
 
 from banking_session_controller import (
     ERROR_INVALID_STATE,
+    FIELD_COMMAND_TYPE,
+    FIELD_STATUS,
     RESULT_STATUS_OK,
 )
 from transport import FileTransport, SessionResponseEnvelope, WORKER_MODE_ERROR
@@ -17,8 +19,8 @@ class WorkerController:
         if self._mode == WORKER_MODE_ERROR:
             raise ValueError(ERROR_INVALID_STATE)
         return {
-            "status": RESULT_STATUS_OK,
-            "command_type": command.get("command_type"),
+            FIELD_STATUS: RESULT_STATUS_OK,
+            FIELD_COMMAND_TYPE: command.get(FIELD_COMMAND_TYPE),
         }
 
 

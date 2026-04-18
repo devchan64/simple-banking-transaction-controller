@@ -18,6 +18,8 @@ from .contracts import (
     COMMAND_REQUEST_BALANCE,
     COMMAND_REQUEST_WITHDRAW,
     ERROR_INVALID_STATE,
+    FIELD_COMMAND_TYPE,
+    FIELD_STATUS,
     RESULT_STATUS_OK,
 )
 from .session import SessionHistoryStore, SessionRecord
@@ -32,7 +34,9 @@ __all__ = [
     "COMMAND_REQUEST_WITHDRAW",
     "DEFAULT_TRANSPORT_ROOT",
     "ERROR_INVALID_STATE",
+    "FIELD_COMMAND_TYPE",
     "FileTransport",
+    "FIELD_STATUS",
     "JsonBankGateway",
     "RESULT_STATUS_OK",
     "SessionHistoryStore",

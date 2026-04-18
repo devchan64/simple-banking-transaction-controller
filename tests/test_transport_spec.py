@@ -11,6 +11,8 @@ from banking_session_controller import (
     COMMAND_REQUEST_BALANCE,
     COMMAND_REQUEST_WITHDRAW,
     ERROR_INVALID_STATE,
+    FIELD_COMMAND_TYPE,
+    FIELD_STATUS,
     RESULT_STATUS_OK,
 )
 from transport import (
@@ -48,7 +50,7 @@ class FileTransportSpec(TestRootSupport, unittest.TestCase):
         request = SessionRequestEnvelope(
             request_id="req-001",
             session_id="session-001",
-            command={"command_type": COMMAND_REQUEST_BALANCE},
+            command={FIELD_COMMAND_TYPE: COMMAND_REQUEST_BALANCE},
         )
 
         print(f"[흐름] transport root={self.transport_root}")
@@ -76,7 +78,10 @@ class FileTransportSpec(TestRootSupport, unittest.TestCase):
 
         self.assertEqual("req-001", response.request_id)
         self.assertEqual(
-            {"status": RESULT_STATUS_OK, "command_type": COMMAND_REQUEST_BALANCE},
+            {
+                FIELD_STATUS: RESULT_STATUS_OK,
+                FIELD_COMMAND_TYPE: COMMAND_REQUEST_BALANCE,
+            },
             response.result,
         )
         self.assertIsNone(response.error_code)
@@ -101,7 +106,7 @@ class FileTransportSpec(TestRootSupport, unittest.TestCase):
         request = SessionRequestEnvelope(
             request_id="req-002",
             session_id="session-001",
-            command={"command_type": COMMAND_REQUEST_WITHDRAW},
+            command={FIELD_COMMAND_TYPE: COMMAND_REQUEST_WITHDRAW},
         )
 
         print(f"[흐름] transport root={self.transport_root}")
@@ -146,7 +151,7 @@ class FileTransportSpec(TestRootSupport, unittest.TestCase):
         request = SessionRequestEnvelope(
             request_id="req-003",
             session_id=None,
-            command={"command_type": COMMAND_INSERT_CARD},
+            command={FIELD_COMMAND_TYPE: COMMAND_INSERT_CARD},
         )
 
         print(f"[흐름] transport root={self.transport_root}")
@@ -171,7 +176,10 @@ class FileTransportSpec(TestRootSupport, unittest.TestCase):
         print(f"[스펙] response 파일 존재 여부={response_path.exists()}")
 
         self.assertEqual(
-            {"status": RESULT_STATUS_OK, "command_type": COMMAND_INSERT_CARD},
+            {
+                FIELD_STATUS: RESULT_STATUS_OK,
+                FIELD_COMMAND_TYPE: COMMAND_INSERT_CARD,
+            },
             response.result,
         )
         self.assertIn('"session_id": null', request_text)
