@@ -23,8 +23,7 @@
 - `Prompt Adapter`: 입력 수집 / `SessionCommand` 변환 / 결과 출력
 - `Transport`: in-process dispatcher / controller 호출 / 예외 변환
 - `BankGateway`: controller 의존 포트 / 외부 데이터 접근 연결
-- `Persistence`: JSON mock repository / 파일 읽기 / 전체 다시 쓰기
-- `Session Registry`: 메모리 보관 / `session_id` 조회 / 종료 세션 차단
+- `Persistence`: JSON mock repository / 메모리 세션 저장 / 파일 읽기 / 전체 다시 쓰기
 
 ## 목적
 
