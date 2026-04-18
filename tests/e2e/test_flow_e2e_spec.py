@@ -15,12 +15,15 @@ class FlowE2ESpec(ModuleProcessSupport, TestRootSupport, unittest.TestCase):
         self.print_test_header()
         self.test_root = Path(".test-run/e2e") / self._testMethodName
         self.reset_test_root(self.test_root, "e2e test_root")
+        self.transport_root = self.test_root / "transport"
+        self.controller_root = self.test_root / "controller"
+        self.banking_root = self.test_root / "banking"
         self._request_sequence = count(1)
 
     def test_end_to_end_balance_procedure_reports_each_step(self) -> None:
         print(spec_text("카드 입력부터 잔액 조회까지 절차를 실제 controller 서버로 검증한다"))
 
-        server = self.start_module("controller", self.test_root)
+        banking_server, controller_server = self._start_servers()
         try:
             insert_response = self._dispatch(
                 SessionCommand(
@@ -61,8 +64,7 @@ class FlowE2ESpec(ModuleProcessSupport, TestRootSupport, unittest.TestCase):
             )
             print(flow_text(f"잔액 조회 응답={balance_response.result}"))
         finally:
-            server.terminate()
-            server.wait(timeout=5)
+            self._stop_servers(controller_server, banking_server)
 
         self.assertEqual("SESSION_STARTED", insert_response.result["status_code"])
         self.assertEqual(
@@ -90,7 +92,7 @@ class FlowE2ESpec(ModuleProcessSupport, TestRootSupport, unittest.TestCase):
     def test_end_to_end_invalid_pin_runs_retry_feedback_loop(self) -> None:
         print(spec_text("잘못된 PIN 1,2회는 남은 횟수를 안내하고 3회째에 세션을 종료해야 한다"))
 
-        server = self.start_module("controller", self.test_root)
+        banking_server, controller_server = self._start_servers()
         try:
             insert_response = self._dispatch(
                 SessionCommand(
@@ -140,8 +142,7 @@ class FlowE2ESpec(ModuleProcessSupport, TestRootSupport, unittest.TestCase):
             )
             print(flow_text(f"종료 후 후속 요청 응답={followup_response.error_message}"))
         finally:
-            server.terminate()
-            server.wait(timeout=5)
+            self._stop_servers(controller_server, banking_server)
 
         self.assertIsNone(first_response.error_code)
         self.assertFalse(first_response.result["succeeded"])
@@ -188,7 +189,7 @@ class FlowE2ESpec(ModuleProcessSupport, TestRootSupport, unittest.TestCase):
     def test_end_to_end_force_end_interrupts_flow_and_rejects_followup(self) -> None:
         print(spec_text("강제 종료는 절차를 중단하고 이후 요청을 거부해야 한다"))
 
-        server = self.start_module("controller", self.test_root)
+        banking_server, controller_server = self._start_servers()
         try:
             insert_response = self._dispatch(
                 SessionCommand(
@@ -234,8 +235,7 @@ class FlowE2ESpec(ModuleProcessSupport, TestRootSupport, unittest.TestCase):
             )
             print(flow_text(f"종료 후 후속 요청 응답={followup_response.error_message}"))
         finally:
-            server.terminate()
-            server.wait(timeout=5)
+            self._stop_servers(controller_server, banking_server)
 
         self.assertEqual("SESSION_CLOSED", force_end_response.result["status_code"])
         self.assertEqual(
@@ -253,7 +253,7 @@ class FlowE2ESpec(ModuleProcessSupport, TestRootSupport, unittest.TestCase):
     ):
         request_id = f"e2e-{next(self._request_sequence):03d}"
         transport = FileTransport(
-            transport_root=self.test_root,
+            transport_root=self.transport_root,
             poll_interval_seconds=0.01,
             timeout_seconds=3.0,
         )
@@ -263,6 +263,25 @@ class FlowE2ESpec(ModuleProcessSupport, TestRootSupport, unittest.TestCase):
             command=command,
         )
         return transport.dispatch(request)
+
+    def _start_servers(self):
+        banking_server = self.start_module("banking", self.banking_root)
+        controller_server = self.start_module(
+            "controller",
+            self.transport_root,
+            "--runtime-root",
+            self.controller_root,
+            "--banking-root",
+            self.banking_root,
+        )
+        return banking_server, controller_server
+
+    @staticmethod
+    def _stop_servers(controller_server, banking_server) -> None:
+        controller_server.terminate()
+        controller_server.wait(timeout=5)
+        banking_server.terminate()
+        banking_server.wait(timeout=5)
 
 
 if __name__ == "__main__":
