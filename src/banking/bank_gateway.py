@@ -4,7 +4,12 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
-from .contracts import CardStatus, ERROR_INVALID_PIN
+from .contracts import (
+    CardStatus,
+    ERROR_ACCOUNT_LOCKED,
+    ERROR_BANK_MAINTENANCE,
+    ERROR_INVALID_PIN,
+)
 
 
 class BankGatewayError(RuntimeError):
@@ -29,9 +34,15 @@ class AccountRecord:
 
 
 class JsonBankGateway:
-    def __init__(self, cards_path: str | Path, accounts_path: str | Path) -> None:
+    def __init__(
+        self,
+        cards_path: str | Path,
+        accounts_path: str | Path,
+        maintenance_enabled: bool = False,
+    ) -> None:
         self._cards_path = Path(cards_path)
         self._accounts_path = Path(accounts_path)
+        self._maintenance_enabled = maintenance_enabled
 
     def get_card_by_number(self, card_number: str) -> CardRecord:
         for card in self._read_cards():
@@ -46,18 +57,22 @@ class JsonBankGateway:
         raise BankGatewayError(f"Unknown card id: {card_id}")
 
     def verify_pin(self, card_number: str, pin: str) -> CardRecord:
+        self._require_service_available()
         card = self.get_card_by_number(card_number)
-        self._require_active_card(card)
+        self._require_available_card(card)
         self._require_matching_pin(card, pin)
         return card
 
     def list_accounts(self, card_id: str) -> list[str]:
+        self._require_service_available()
         return self.get_card_by_id(card_id).account_ids
 
     def get_balance(self, account_id: str) -> int:
+        self._require_service_available()
         return self._get_account(account_id).balance
 
     def deposit(self, account_id: str, amount: int) -> int:
+        self._require_service_available()
         self._require_positive_amount(amount)
         account = self._get_account(account_id)
         updated = AccountRecord(
@@ -67,6 +82,7 @@ class JsonBankGateway:
         return updated.balance
 
     def withdraw(self, account_id: str, amount: int) -> int:
+        self._require_service_available()
         self._require_positive_amount(amount)
         account = self._get_account(account_id)
         if account.balance < amount:
@@ -115,9 +131,15 @@ class JsonBankGateway:
         )
 
     @staticmethod
-    def _require_active_card(card: CardRecord) -> None:
+    def _require_available_card(card: CardRecord) -> None:
+        if card.status == CardStatus.LOCKED:
+            raise BankGatewayError(ERROR_ACCOUNT_LOCKED)
         if card.status != CardStatus.ACTIVE:
             raise BankGatewayError(f"Inactive card: {card.card_id}")
+
+    def _require_service_available(self) -> None:
+        if self._maintenance_enabled:
+            raise BankGatewayError(ERROR_BANK_MAINTENANCE)
 
     @staticmethod
     def _require_matching_pin(card: CardRecord, pin: str) -> None:

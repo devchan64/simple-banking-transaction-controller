@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-import json
 import unittest
 from pathlib import Path
 
 from banking import (
     BankGatewayError,
     CardStatus,
+    ERROR_ACCOUNT_LOCKED,
     ERROR_INVALID_PIN,
     JsonBankGateway,
 )
@@ -52,6 +52,15 @@ class JsonBankGatewaySpec(TestRootSupport, unittest.TestCase):
         print(spec_text(f"계좌 목록={accounts}"))
         self.assertEqual(["account-004", "account-005"], accounts)
 
+    def test_list_accounts_returns_single_account_for_new_fixture_card(self) -> None:
+        # fixture 에 추가된 단일 계좌 카드도 그대로 읽을 수 있어야 한다.
+        print(spec_text("단일 계좌 카드 fixture 도 계좌 목록을 반환한다"))
+
+        accounts = self.gateway.list_accounts("card-007")
+
+        print(spec_text(f"계좌 목록={accounts}"))
+        self.assertEqual(["account-009"], accounts)
+
     def test_get_balance_returns_current_balance(self) -> None:
         # 계좌 잔액을 현재 값 그대로 반환해야 한다.
         print(spec_text("계좌 잔액을 조회한다"))
@@ -60,6 +69,15 @@ class JsonBankGatewaySpec(TestRootSupport, unittest.TestCase):
 
         print(spec_text(f"잔액={balance}"))
         self.assertEqual(5400, balance)
+
+    def test_get_balance_returns_zero_for_empty_balance_fixture(self) -> None:
+        # 0원 계좌 fixture 도 그대로 조회되어야 한다.
+        print(spec_text("0원 계좌 fixture 의 잔액을 조회한다"))
+
+        balance = self.gateway.get_balance("account-007")
+
+        print(spec_text(f"잔액={balance}"))
+        self.assertEqual(0, balance)
 
     def test_deposit_updates_account_balance(self) -> None:
         # 입금 후에는 accounts.json의 잔액도 함께 갱신되어야 한다.
@@ -96,17 +114,18 @@ class JsonBankGatewaySpec(TestRootSupport, unittest.TestCase):
             self.gateway.verify_pin("4000-1234-5678-0002", "0000")
 
     def test_verify_pin_rejects_inactive_card(self) -> None:
-        # 비활성 카드면 PIN이 맞아도 인증을 실패해야 한다.
+        # fixture 상 비활성 카드면 PIN이 맞아도 인증을 실패해야 한다.
         print(spec_text("비활성 카드면 PIN 인증을 거부한다"))
-        cards = json.loads(self.cards_path.read_text(encoding="utf-8"))
-        cards[0]["status"] = CardStatus.INACTIVE
-        self.cards_path.write_text(
-            json.dumps(cards, ensure_ascii=True, indent=2),
-            encoding="utf-8",
-        )
 
         with self.assertRaisesRegex(BankGatewayError, "Inactive card"):
-            self.gateway.verify_pin("4000-1234-5678-0001", "1234")
+            self.gateway.verify_pin("4000-1234-5678-0006", "8888")
+
+    def test_verify_pin_rejects_locked_card(self) -> None:
+        # fixture 상 잠긴 카드는 사용자 안내 메시지로 인증을 실패해야 한다.
+        print(spec_text("잠긴 카드 fixture 는 안내 메시지로 PIN 인증을 거부한다"))
+
+        with self.assertRaisesRegex(BankGatewayError, ERROR_ACCOUNT_LOCKED):
+            self.gateway.verify_pin("4000-1234-5678-0005", "7777")
 
     def test_deposit_rejects_non_positive_amount(self) -> None:
         # 금액이 0 이하이면 입금을 거부해야 한다.

@@ -34,5 +34,32 @@
     "status": "ACTIVE",
     "pin": "1357",
     "account_ids": ["account-006"]
+  },
+  {
+    "card_id": "card-005",
+    "card_number": "4000-1234-5678-0005",
+    "cardholder_name": "JUNG DAEUN",
+    "expires_at": "2029-10",
+    "status": "LOCKED",
+    "pin": "7777",
+    "account_ids": ["account-007"]
+  },
+  {
+    "card_id": "card-006",
+    "card_number": "4000-1234-5678-0006",
+    "cardholder_name": "HAN SIWOO",
+    "expires_at": "2025-09",
+    "status": "INACTIVE",
+    "pin": "8888",
+    "account_ids": ["account-008"]
+  },
+  {
+    "card_id": "card-007",
+    "card_number": "4000-1234-5678-0007",
+    "cardholder_name": "OH YERIN",
+    "expires_at": "2030-03",
+    "status": "ACTIVE",
+    "pin": "9999",
+    "account_ids": ["account-009"]
   }
 ]

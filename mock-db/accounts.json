@@ -22,5 +22,17 @@
   {
     "account_id": "account-006",
     "balance": 75
+  },
+  {
+    "account_id": "account-007",
+    "balance": 0
+  },
+  {
+    "account_id": "account-008",
+    "balance": 40
+  },
+  {
+    "account_id": "account-009",
+    "balance": 250000
   }
 ]
