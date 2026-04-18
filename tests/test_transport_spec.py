@@ -6,10 +6,22 @@ import time
 import unittest
 from pathlib import Path
 
+from banking_session_controller import (
+    COMMAND_INSERT_CARD,
+    COMMAND_REQUEST_BALANCE,
+    COMMAND_REQUEST_WITHDRAW,
+    ERROR_INVALID_STATE,
+    RESULT_STATUS_OK,
+)
 from transport import (
     DEFAULT_TRANSPORT_ROOT,
     FileTransport,
     SessionRequestEnvelope,
+    TRANSPORT_FILE_SUFFIX,
+    TRANSPORT_REQUESTS_DIR,
+    TRANSPORT_RESPONSES_DIR,
+    WORKER_MODE_ERROR,
+    WORKER_MODE_SUCCESS,
 )
 from spec_support import TestRootSupport
 
@@ -25,19 +37,29 @@ class FileTransportSpec(TestRootSupport, unittest.TestCase):
             "[스펙] 두 개의 프로세스가 request/response 파일로 성공 응답을 주고받는다"
         )
         transport = FileTransport(self.transport_root)
-        request_path = self.transport_root / "requests" / "req-001.json"
-        response_path = self.transport_root / "responses" / "req-001.json"
+        request_path = (
+            self.transport_root / TRANSPORT_REQUESTS_DIR / f"req-001{TRANSPORT_FILE_SUFFIX}"
+        )
+        response_path = (
+            self.transport_root
+            / TRANSPORT_RESPONSES_DIR
+            / f"req-001{TRANSPORT_FILE_SUFFIX}"
+        )
         request = SessionRequestEnvelope(
             request_id="req-001",
             session_id="session-001",
-            command={"command_type": "REQUEST_BALANCE"},
+            command={"command_type": COMMAND_REQUEST_BALANCE},
         )
 
         print(f"[흐름] transport root={self.transport_root}")
         print(f"[흐름] request 파일 생성 위치={request_path}")
         print(f"[흐름] response 파일 생성 위치={response_path}")
         print("[흐름] 1. worker 프로세스 시작")
-        worker = self._start_worker_process(self.transport_root, "req-001", "success")
+        worker = self._start_worker_process(
+            self.transport_root,
+            "req-001",
+            WORKER_MODE_SUCCESS,
+        )
         started_at = time.monotonic()
         print("[흐름] 2. CLI 프로세스가 request 파일 작성")
         response = transport.dispatch(request)
@@ -54,7 +76,7 @@ class FileTransportSpec(TestRootSupport, unittest.TestCase):
 
         self.assertEqual("req-001", response.request_id)
         self.assertEqual(
-            {"status": "ok", "command_type": "REQUEST_BALANCE"},
+            {"status": RESULT_STATUS_OK, "command_type": COMMAND_REQUEST_BALANCE},
             response.result,
         )
         self.assertIsNone(response.error_code)
@@ -68,18 +90,28 @@ class FileTransportSpec(TestRootSupport, unittest.TestCase):
             "[스펙] controller 프로세스 예외를 response 파일의 error 응답으로 변환한다"
         )
         transport = FileTransport(self.transport_root)
-        request_path = self.transport_root / "requests" / "req-002.json"
-        response_path = self.transport_root / "responses" / "req-002.json"
+        request_path = (
+            self.transport_root / TRANSPORT_REQUESTS_DIR / f"req-002{TRANSPORT_FILE_SUFFIX}"
+        )
+        response_path = (
+            self.transport_root
+            / TRANSPORT_RESPONSES_DIR
+            / f"req-002{TRANSPORT_FILE_SUFFIX}"
+        )
         request = SessionRequestEnvelope(
             request_id="req-002",
             session_id="session-001",
-            command={"command_type": "REQUEST_WITHDRAW"},
+            command={"command_type": COMMAND_REQUEST_WITHDRAW},
         )
 
         print(f"[흐름] transport root={self.transport_root}")
         print(f"[흐름] request 파일 생성 위치={request_path}")
         print(f"[흐름] response 파일 생성 위치={response_path}")
-        worker = self._start_worker_process(self.transport_root, "req-002", "error")
+        worker = self._start_worker_process(
+            self.transport_root,
+            "req-002",
+            WORKER_MODE_ERROR,
+        )
         started_at = time.monotonic()
         response = transport.dispatch(request)
         elapsed_ms = (time.monotonic() - started_at) * 1000
@@ -93,7 +125,7 @@ class FileTransportSpec(TestRootSupport, unittest.TestCase):
         self.assertEqual("req-002", response.request_id)
         self.assertIsNone(response.result)
         self.assertEqual("ValueError", response.error_code)
-        self.assertEqual("invalid state", response.error_message)
+        self.assertEqual(ERROR_INVALID_STATE, response.error_message)
 
     def test_dispatch_keeps_session_id_in_request_file_without_reinterpretation(
         self,
@@ -103,18 +135,28 @@ class FileTransportSpec(TestRootSupport, unittest.TestCase):
             "[스펙] session_id는 두 프로세스 사이에서 재해석하지 않고 그대로 유지한다"
         )
         transport = FileTransport(self.transport_root)
-        request_path = self.transport_root / "requests" / "req-003.json"
-        response_path = self.transport_root / "responses" / "req-003.json"
+        request_path = (
+            self.transport_root / TRANSPORT_REQUESTS_DIR / f"req-003{TRANSPORT_FILE_SUFFIX}"
+        )
+        response_path = (
+            self.transport_root
+            / TRANSPORT_RESPONSES_DIR
+            / f"req-003{TRANSPORT_FILE_SUFFIX}"
+        )
         request = SessionRequestEnvelope(
             request_id="req-003",
             session_id=None,
-            command={"command_type": "INSERT_CARD"},
+            command={"command_type": COMMAND_INSERT_CARD},
         )
 
         print(f"[흐름] transport root={self.transport_root}")
         print(f"[흐름] request 파일 생성 위치={request_path}")
         print(f"[흐름] response 파일 생성 위치={response_path}")
-        worker = self._start_worker_process(self.transport_root, "req-003", "success")
+        worker = self._start_worker_process(
+            self.transport_root,
+            "req-003",
+            WORKER_MODE_SUCCESS,
+        )
         started_at = time.monotonic()
         response = transport.dispatch(request)
         elapsed_ms = (time.monotonic() - started_at) * 1000
@@ -129,7 +171,7 @@ class FileTransportSpec(TestRootSupport, unittest.TestCase):
         print(f"[스펙] response 파일 존재 여부={response_path.exists()}")
 
         self.assertEqual(
-            {"status": "ok", "command_type": "INSERT_CARD"},
+            {"status": RESULT_STATUS_OK, "command_type": COMMAND_INSERT_CARD},
             response.result,
         )
         self.assertIn('"session_id": null', request_text)

@@ -7,10 +7,17 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
+from .contracts import (
+    TRANSPORT_FILE_SUFFIX,
+    TRANSPORT_REQUESTS_DIR,
+    TRANSPORT_RESPONSES_DIR,
+    TRANSPORT_ROOT_ENV,
+)
+
 WORKSPACE_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_TRANSPORT_ROOT = Path(
     os.environ.get(
-        "BANKING_TRANSPORT_ROOT",
+        TRANSPORT_ROOT_ENV,
         str(WORKSPACE_ROOT / ".transport" / "runtime"),
     )
 )
@@ -43,8 +50,8 @@ class FileTransport:
             if transport_root is not None
             else DEFAULT_TRANSPORT_ROOT
         )
-        self._requests_dir = self._root / "requests"
-        self._responses_dir = self._root / "responses"
+        self._requests_dir = self._root / TRANSPORT_REQUESTS_DIR
+        self._responses_dir = self._root / TRANSPORT_RESPONSES_DIR
         self._poll_interval_seconds = poll_interval_seconds
         self._timeout_seconds = timeout_seconds
         self._requests_dir.mkdir(parents=True, exist_ok=True)
@@ -56,10 +63,10 @@ class FileTransport:
         return self.wait_for_response(request.request_id)
 
     def request_path(self, request_id: str) -> Path:
-        return self._requests_dir / f"{request_id}.json"
+        return self._requests_dir / f"{request_id}{TRANSPORT_FILE_SUFFIX}"
 
     def response_path(self, request_id: str) -> Path:
-        return self._responses_dir / f"{request_id}.json"
+        return self._responses_dir / f"{request_id}{TRANSPORT_FILE_SUFFIX}"
 
     @property
     def root(self) -> Path:

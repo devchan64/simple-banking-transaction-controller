@@ -2,7 +2,11 @@ from __future__ import annotations
 
 import sys
 
-from transport import FileTransport, SessionResponseEnvelope
+from banking_session_controller import (
+    ERROR_INVALID_STATE,
+    RESULT_STATUS_OK,
+)
+from transport import FileTransport, SessionResponseEnvelope, WORKER_MODE_ERROR
 
 
 class WorkerController:
@@ -10,10 +14,10 @@ class WorkerController:
         self._mode = mode
 
     def handle(self, command: dict) -> dict:
-        if self._mode == "error":
-            raise ValueError("invalid state")
+        if self._mode == WORKER_MODE_ERROR:
+            raise ValueError(ERROR_INVALID_STATE)
         return {
-            "status": "ok",
+            "status": RESULT_STATUS_OK,
             "command_type": command.get("command_type"),
         }
 
