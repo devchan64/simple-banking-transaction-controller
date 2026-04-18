@@ -19,11 +19,11 @@
 
 ## 계층
 
-- `Controller`: `handle(command)` / 상태 검증 / 상태 전이 / 결과 생성
+- `Controller`: `handle(command)` / 상태 검증 / 상태 전이 / 결과 생성 / 세션 인증 확인 / 세션 만료 확인 / 세션 갱신 처리
 - `Prompt Adapter`: 입력 수집 / `SessionCommand` 변환 / 결과 출력
-- `Transport`: in-process dispatcher / controller 호출 / 예외 변환
+- `Transport`: controller 호출만 넘기는 작은 보조 계층
 - `BankGateway`: controller 의존 포트 / 외부 데이터 접근 연결
-- `Persistence`: JSON mock repository / 메모리 세션 저장 / 파일 읽기 / 전체 다시 쓰기
+- `Persistence`: controller 검증용 최소 mock 저장
 
 ## 목적
 
