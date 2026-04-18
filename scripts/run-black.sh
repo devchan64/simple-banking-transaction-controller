@@ -4,4 +4,9 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 cd "$ROOT_DIR"
-python3 -m black src tests
+
+if [[ -f ".venv/bin/activate" ]]; then
+    source ".venv/bin/activate"
+fi
+
+python -m black src tests

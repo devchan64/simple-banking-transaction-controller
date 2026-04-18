@@ -1,0 +1,2 @@
+pydantic>=2,<3
+black>=24,<26
