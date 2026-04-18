@@ -1,6 +1,12 @@
 from __future__ import annotations
 
-from banking import BankGatewayError, JsonBankGateway, SessionHistoryStore
+from banking import (
+    BankGatewayError,
+    ERROR_PIN_ATTEMPTS_EXCEEDED,
+    JsonBankGateway,
+    PinVerificationError,
+    SessionHistoryStore,
+)
 
 from .command import CommandValidationError, CommandValidator, SessionCommand
 from .contracts import CommandType, SessionState, TransactionType
@@ -59,7 +65,7 @@ class BankingFlowController:
             status_code="SESSION_STARTED",
             session_state=SessionState.CARD_INSERTED,
             session_token=record.session_token,
-            message="Card accepted. Enter PIN.",
+            message="카드를 확인했습니다. PIN을 입력해주세요.",
             session_closed=False,
         )
 
@@ -70,6 +76,37 @@ class BankingFlowController:
         try:
             card = self._bank_gateway.verify_pin(session.card_number, command.pin)
             account_ids = self._bank_gateway.list_accounts(card.card_id)
+        except PinVerificationError as exc:
+            if exc.card_locked or str(exc) == ERROR_PIN_ATTEMPTS_EXCEEDED:
+                closed_session = session.model_copy(
+                    update={"session_state": SessionState.SESSION_CLOSED}
+                )
+                self._session_store.save_session(closed_session)
+                return SessionResult(
+                    succeeded=False,
+                    status_code="PIN_ATTEMPTS_EXCEEDED",
+                    session_state=SessionState.SESSION_CLOSED,
+                    session_token=closed_session.session_token,
+                    message="PIN 입력을 3회 실패했습니다. 세션을 종료합니다. 카드 사용이 중단되었습니다.",
+                    session_closed=True,
+                    remaining_pin_attempts=0,
+                )
+
+            if str(exc) == "PIN이 올바르지 않습니다.":
+                return SessionResult(
+                    succeeded=False,
+                    status_code="PIN_FAILED_RETRYABLE",
+                    session_state=SessionState.CARD_INSERTED,
+                    session_token=session.session_token,
+                    message=(
+                        "PIN이 올바르지 않습니다. "
+                        "3회 실패 시 세션이 종료되고 카드 사용이 중단됩니다. "
+                        f"남은 시도 {exc.remaining_attempts}회."
+                    ),
+                    session_closed=False,
+                    remaining_pin_attempts=exc.remaining_attempts,
+                )
+            raise ControllerError(str(exc)) from exc
         except BankGatewayError as exc:
             raise ControllerError(str(exc)) from exc
 
@@ -80,9 +117,10 @@ class BankingFlowController:
             status_code="PIN_VERIFIED",
             session_state=SessionState.AUTHENTICATED,
             session_token=updated_session.session_token,
-            message="PIN verified. Select account.",
+            message="PIN이 확인되었습니다. 계좌를 선택해주세요.",
             available_account_ids=account_ids,
             session_closed=False,
+            remaining_pin_attempts=3,
         )
 
     def _handle_select_account(
@@ -95,7 +133,7 @@ class BankingFlowController:
             raise ControllerError(str(exc)) from exc
 
         if command.account_id not in account_ids:
-            raise ControllerError(f"Unknown account id: {command.account_id}")
+            raise ControllerError(f"알 수 없는 계좌입니다: {command.account_id}")
 
         updated_session = session.model_copy(
             update={
@@ -109,7 +147,7 @@ class BankingFlowController:
             status_code="ACCOUNT_SELECTED",
             session_state=SessionState.ACCOUNT_SELECTED,
             session_token=updated_session.session_token,
-            message="Account selected. Choose transaction.",
+            message="계좌가 선택되었습니다. 거래를 선택해주세요.",
             selected_account_id=updated_session.selected_account_id,
             session_closed=False,
         )
@@ -128,7 +166,7 @@ class BankingFlowController:
             status_code="BALANCE_REPORTED",
             session_state=SessionState.RESULT_REPORTED,
             session_token=updated_session.session_token,
-            message="Balance reported.",
+            message="현재 잔액을 안내했습니다.",
             selected_account_id=updated_session.selected_account_id,
             balance=balance,
             transaction_type=TransactionType.BALANCE,
@@ -151,7 +189,7 @@ class BankingFlowController:
             status_code="DEPOSIT_REPORTED",
             session_state=SessionState.RESULT_REPORTED,
             session_token=updated_session.session_token,
-            message="Deposit completed.",
+            message="입금이 완료되었습니다.",
             selected_account_id=updated_session.selected_account_id,
             balance=balance,
             transaction_type=TransactionType.DEPOSIT,
@@ -175,7 +213,7 @@ class BankingFlowController:
             status_code="WITHDRAW_REPORTED",
             session_state=SessionState.RESULT_REPORTED,
             session_token=updated_session.session_token,
-            message="Withdrawal completed.",
+            message="출금이 완료되었습니다.",
             selected_account_id=updated_session.selected_account_id,
             balance=balance,
             transaction_type=TransactionType.WITHDRAW,
@@ -191,7 +229,7 @@ class BankingFlowController:
             status_code="SESSION_CLOSED",
             session_state=SessionState.SESSION_CLOSED,
             session_token=updated_session.session_token,
-            message="Session ended. Please remove card.",
+            message="세션이 종료되었습니다. 카드를 회수해주세요.",
             selected_account_id=updated_session.selected_account_id,
             session_closed=True,
         )
@@ -205,7 +243,7 @@ class BankingFlowController:
     @staticmethod
     def _require_not_closed(session: StoredSession) -> None:
         if session.session_state == SessionState.SESSION_CLOSED:
-            raise ControllerError("Session already closed")
+            raise ControllerError("이미 종료된 세션입니다")
 
     @staticmethod
     def _require_state(session: StoredSession, expected_state: SessionState) -> None:

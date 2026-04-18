@@ -17,7 +17,7 @@ from transport import (
     TRANSPORT_FILE_SUFFIX,
     TransportDirectoryName,
 )
-from spec_support import TestRootSupport, flow_text, spec_text
+from tests.support.spec_support import TestRootSupport, flow_text, spec_text
 
 
 class FileTransportSpec(TestRootSupport, unittest.TestCase):
@@ -133,7 +133,7 @@ class FileTransportSpec(TestRootSupport, unittest.TestCase):
         self.assertEqual("req-002", response.request_id)
         self.assertIsNone(response.result)
         self.assertEqual("ControllerError", response.error_code)
-        self.assertEqual("Unknown session token: session-unknown", response.error_message)
+        self.assertEqual("알 수 없는 세션 토큰입니다: session-unknown", response.error_message)
 
     def test_dispatch_keeps_session_id_in_request_file_without_reinterpretation(
         self,
@@ -201,11 +201,11 @@ class FileTransportSpec(TestRootSupport, unittest.TestCase):
         return subprocess.Popen(
             [
                 "python3",
-                "tests/worker_process.py",
+                "tests/transport/worker_process.py",
                 str(transport_root),
                 request_id,
             ],
-            cwd=Path(__file__).resolve().parents[1],
+            cwd=Path(__file__).resolve().parents[2],
             env=env,
             text=True,
         )

@@ -91,8 +91,8 @@ class BankingFlowControllerSpec(TestRootSupport, unittest.TestCase):
         self.assertEqual(SessionState.AUTHENTICATED, result.session_state)
         self.assertEqual(["account-001", "account-002"], result.available_account_ids)
 
-    def test_submit_pin_with_invalid_pin_fails(self) -> None:
-        print(spec_text("잘못된 PIN 입력은 인증 실패 메시지를 반환한다"))
+    def test_submit_pin_with_invalid_pin_allows_retry_before_limit(self) -> None:
+        print(spec_text("잘못된 PIN 1회, 2회는 남은 횟수를 안내하고 재입력을 허용한다"))
 
         session = self.controller.handle(
             {
@@ -101,17 +101,82 @@ class BankingFlowControllerSpec(TestRootSupport, unittest.TestCase):
             }
         )
 
-        with self.assertRaisesRegex(ControllerError, ERROR_INVALID_PIN):
+        first_result = self.controller.handle(
+            {
+                "command_type": CommandType.SUBMIT_PIN,
+                "session_token": session.session_token,
+                "pin": "0000",
+            }
+        )
+        second_result = self.controller.handle(
+            {
+                "command_type": CommandType.SUBMIT_PIN,
+                "session_token": session.session_token,
+                "pin": "1111",
+            }
+        )
+
+        self.assertFalse(first_result.succeeded)
+        self.assertEqual("PIN_FAILED_RETRYABLE", first_result.status_code)
+        self.assertEqual(
+            "PIN이 올바르지 않습니다. 3회 실패 시 세션이 종료되고 카드 사용이 중단됩니다. 남은 시도 2회.",
+            first_result.message,
+        )
+        self.assertEqual(2, first_result.remaining_pin_attempts)
+        self.assertEqual(
+            SessionState.CARD_INSERTED,
+            self._stored_state(session.session_token),
+        )
+
+        self.assertFalse(second_result.succeeded)
+        self.assertEqual("PIN_FAILED_RETRYABLE", second_result.status_code)
+        self.assertEqual(
+            "PIN이 올바르지 않습니다. 3회 실패 시 세션이 종료되고 카드 사용이 중단됩니다. 남은 시도 1회.",
+            second_result.message,
+        )
+        self.assertEqual(1, second_result.remaining_pin_attempts)
+        self.assertEqual(
+            SessionState.CARD_INSERTED,
+            self._stored_state(session.session_token),
+        )
+
+    def test_submit_pin_closes_session_after_third_invalid_attempt(self) -> None:
+        print(spec_text("잘못된 PIN 3회째에는 세션을 종료하고 카드를 회수하게 한다"))
+
+        session = self.controller.handle(
+            {
+                "command_type": CommandType.INSERT_CARD,
+                "card_number": "4000-1234-5678-0001",
+            }
+        )
+
+        for invalid_pin in ("0000", "1111"):
             self.controller.handle(
                 {
                     "command_type": CommandType.SUBMIT_PIN,
                     "session_token": session.session_token,
-                    "pin": "0000",
+                    "pin": invalid_pin,
                 }
             )
 
+        third_result = self.controller.handle(
+            {
+                "command_type": CommandType.SUBMIT_PIN,
+                "session_token": session.session_token,
+                "pin": "2222",
+            }
+        )
+
+        self.assertFalse(third_result.succeeded)
+        self.assertEqual("PIN_ATTEMPTS_EXCEEDED", third_result.status_code)
         self.assertEqual(
-            SessionState.CARD_INSERTED,
+            "PIN 입력을 3회 실패했습니다. 세션을 종료합니다. 카드 사용이 중단되었습니다.",
+            third_result.message,
+        )
+        self.assertTrue(third_result.session_closed)
+        self.assertEqual(0, third_result.remaining_pin_attempts)
+        self.assertEqual(
+            SessionState.SESSION_CLOSED,
             self._stored_state(session.session_token),
         )
 
@@ -176,7 +241,7 @@ class BankingFlowControllerSpec(TestRootSupport, unittest.TestCase):
             }
         )
 
-        with self.assertRaisesRegex(ControllerError, "Unknown account id: account-999"):
+        with self.assertRaisesRegex(ControllerError, "알 수 없는 계좌입니다: account-999"):
             self.controller.handle(
                 {
                     "command_type": CommandType.SELECT_ACCOUNT,
@@ -328,7 +393,7 @@ class BankingFlowControllerSpec(TestRootSupport, unittest.TestCase):
             }
         )
 
-        with self.assertRaisesRegex(ControllerError, "Insufficient balance: account-006"):
+        with self.assertRaisesRegex(ControllerError, "잔액이 부족합니다: account-006"):
             self.controller.handle(
                 {
                     "command_type": CommandType.REQUEST_WITHDRAW,
@@ -477,7 +542,7 @@ class BankingFlowControllerSpec(TestRootSupport, unittest.TestCase):
 
         self.assertTrue(closed.session_closed)
 
-        with self.assertRaisesRegex(ControllerError, "Session already closed"):
+        with self.assertRaisesRegex(ControllerError, "이미 종료된 세션입니다"):
             self.controller.handle(
                 {
                     "command_type": CommandType.SUBMIT_PIN,

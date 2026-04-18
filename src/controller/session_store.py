@@ -45,7 +45,7 @@ class JsonSessionStore:
         for session in self._read_all():
             if session.session_token == session_token:
                 return session
-        raise SessionStoreError(f"Unknown session token: {session_token}")
+        raise SessionStoreError(f"알 수 없는 세션 토큰입니다: {session_token}")
 
     def save_session(self, updated_session: StoredSession) -> StoredSession:
         sessions = []
@@ -59,7 +59,7 @@ class JsonSessionStore:
 
         if not found:
             raise SessionStoreError(
-                f"Unknown session token: {updated_session.session_token}"
+                f"알 수 없는 세션 토큰입니다: {updated_session.session_token}"
             )
 
         self._write_all(sessions)

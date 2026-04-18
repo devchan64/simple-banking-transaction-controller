@@ -8,7 +8,9 @@ from banking import (
     CardStatus,
     ERROR_ACCOUNT_LOCKED,
     ERROR_INVALID_PIN,
+    ERROR_PIN_ATTEMPTS_EXCEEDED,
     JsonBankGateway,
+    PinVerificationError,
 )
 from tests.support.spec_support import TestRootSupport, spec_text
 
@@ -113,11 +115,38 @@ class JsonBankGatewaySpec(TestRootSupport, unittest.TestCase):
         with self.assertRaisesRegex(BankGatewayError, ERROR_INVALID_PIN):
             self.gateway.verify_pin("4000-1234-5678-0002", "0000")
 
+        card = self.gateway.get_card_by_number("4000-1234-5678-0002")
+        self.assertEqual(CardStatus.ACTIVE, card.status)
+        self.assertEqual(1, card.pin_failure_count)
+
+    def test_verify_pin_locks_card_after_third_invalid_attempt(self) -> None:
+        print(spec_text("PIN 3회 실패 시 bank 가 카드를 사용중단 상태로 만든다"))
+
+        for invalid_pin in ("0000", "1111"):
+            with self.assertRaisesRegex(BankGatewayError, ERROR_INVALID_PIN):
+                self.gateway.verify_pin("4000-1234-5678-0002", invalid_pin)
+
+        with self.assertRaisesRegex(BankGatewayError, ERROR_PIN_ATTEMPTS_EXCEEDED):
+            self.gateway.verify_pin("4000-1234-5678-0002", "2222")
+
+        card = self.gateway.get_card_by_number("4000-1234-5678-0002")
+        self.assertEqual(CardStatus.LOCKED, card.status)
+        self.assertEqual(3, card.pin_failure_count)
+
+    def test_verify_pin_reports_remaining_attempts(self) -> None:
+        print(spec_text("PIN 실패 시 bank 는 남은 시도 횟수를 함께 제공한다"))
+
+        with self.assertRaises(PinVerificationError) as exc_info:
+            self.gateway.verify_pin("4000-1234-5678-0002", "0000")
+
+        self.assertEqual(2, exc_info.exception.remaining_attempts)
+        self.assertFalse(exc_info.exception.card_locked)
+
     def test_verify_pin_rejects_inactive_card(self) -> None:
         # fixture 상 비활성 카드면 PIN이 맞아도 인증을 실패해야 한다.
         print(spec_text("비활성 카드면 PIN 인증을 거부한다"))
 
-        with self.assertRaisesRegex(BankGatewayError, "Inactive card"):
+        with self.assertRaisesRegex(BankGatewayError, "비활성 카드입니다"):
             self.gateway.verify_pin("4000-1234-5678-0006", "8888")
 
     def test_verify_pin_rejects_locked_card(self) -> None:
@@ -131,14 +160,14 @@ class JsonBankGatewaySpec(TestRootSupport, unittest.TestCase):
         # 금액이 0 이하이면 입금을 거부해야 한다.
         print(spec_text("0 이하 금액 입금을 거부한다"))
 
-        with self.assertRaisesRegex(BankGatewayError, "Invalid amount"):
+        with self.assertRaisesRegex(BankGatewayError, "올바르지 않은 금액입니다"):
             self.gateway.deposit("account-001", 0)
 
     def test_withdraw_rejects_non_positive_amount(self) -> None:
         # 금액이 0 이하이면 출금을 거부해야 한다.
         print(spec_text("0 이하 금액 출금을 거부한다"))
 
-        with self.assertRaisesRegex(BankGatewayError, "Invalid amount"):
+        with self.assertRaisesRegex(BankGatewayError, "올바르지 않은 금액입니다"):
             self.gateway.withdraw("account-001", -1)
 
 

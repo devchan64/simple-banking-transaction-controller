@@ -19,3 +19,4 @@ class SessionResult(BaseModel):
     balance: StrictInt | None = None
     transaction_type: TransactionType | None = None
     requested_amount: StrictInt | None = None
+    remaining_pin_attempts: StrictInt | None = None

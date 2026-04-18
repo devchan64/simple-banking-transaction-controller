@@ -39,7 +39,11 @@ def main() -> int:
     transport_root = sys.argv[1]
     request_id = sys.argv[2]
 
-    transport = FileTransport(transport_root)
+    transport = FileTransport(
+        transport_root=transport_root,
+        poll_interval_seconds=0.01,
+        timeout_seconds=3.0,
+    )
     controller = build_controller(Path(transport_root))
     request = transport.wait_for_request(request_id)
 

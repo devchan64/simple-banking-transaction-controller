@@ -17,14 +17,14 @@ class SessionResultSpec(TestRootSupport, unittest.TestCase):
             succeeded=True,
             status_code="AUTHENTICATED",
             session_state=SessionState.AUTHENTICATED,
-            message="PIN verified.",
+            message="PIN이 확인되었습니다.",
             session_closed=False,
         )
 
         self.assertTrue(result.succeeded)
         self.assertEqual("AUTHENTICATED", result.status_code)
         self.assertEqual(SessionState.AUTHENTICATED, result.session_state)
-        self.assertEqual("PIN verified.", result.message)
+        self.assertEqual("PIN이 확인되었습니다.", result.message)
         self.assertFalse(result.session_closed)
 
     def test_session_result_accepts_account_list_after_authentication(self) -> None:
@@ -35,13 +35,15 @@ class SessionResultSpec(TestRootSupport, unittest.TestCase):
             status_code="ACCOUNT_LIST_READY",
             session_state=SessionState.AUTHENTICATED,
             session_token="session-001",
-            message="Select account.",
+            message="계좌를 선택해주세요.",
             available_account_ids=["account-001", "account-002"],
             session_closed=False,
+            remaining_pin_attempts=3,
         )
 
         self.assertEqual(["account-001", "account-002"], result.available_account_ids)
         self.assertEqual("session-001", result.session_token)
+        self.assertEqual(3, result.remaining_pin_attempts)
 
     def test_session_result_accepts_transaction_fields(self) -> None:
         print(spec_text("거래 결과는 transaction_type, amount, balance 를 포함할 수 있다"))
@@ -51,7 +53,7 @@ class SessionResultSpec(TestRootSupport, unittest.TestCase):
             status_code="WITHDRAW_COMPLETED",
             session_state=SessionState.TRANSACTION_EXECUTED,
             session_token="session-001",
-            message="Withdraw completed.",
+            message="출금이 완료되었습니다.",
             selected_account_id="account-001",
             balance=900,
             transaction_type=TransactionType.WITHDRAW,
@@ -71,7 +73,7 @@ class SessionResultSpec(TestRootSupport, unittest.TestCase):
                 succeeded=True,
                 status_code="BALANCE_READY",
                 session_state=SessionState.TRANSACTION_EXECUTED,
-                message="Balance ready.",
+                message="잔액을 안내했습니다.",
                 balance="900",  # type: ignore[arg-type]
                 session_closed=False,
             )

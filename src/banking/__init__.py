@@ -1,9 +1,16 @@
-from .bank_gateway import AccountRecord, BankGatewayError, CardRecord, JsonBankGateway
+from .bank_gateway import (
+    AccountRecord,
+    BankGatewayError,
+    CardRecord,
+    JsonBankGateway,
+    PinVerificationError,
+)
 from .contracts import (
     CardStatus,
     ERROR_ACCOUNT_LOCKED,
     ERROR_BANK_MAINTENANCE,
     ERROR_INVALID_PIN,
+    ERROR_PIN_ATTEMPTS_EXCEEDED,
 )
 from .protocol import BankAction, BankRequest, BankResponse
 from .runtime import BankingRuntimePaths, prepare_banking_runtime
@@ -21,7 +28,9 @@ __all__ = [
     "ERROR_ACCOUNT_LOCKED",
     "ERROR_BANK_MAINTENANCE",
     "ERROR_INVALID_PIN",
+    "ERROR_PIN_ATTEMPTS_EXCEEDED",
     "JsonBankGateway",
+    "PinVerificationError",
     "prepare_banking_runtime",
     "SessionHistoryStore",
     "SessionRecord",

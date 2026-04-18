@@ -6,7 +6,8 @@
     "expires_at": "2028-12",
     "status": "ACTIVE",
     "pin": "1234",
-    "account_ids": ["account-001", "account-002"]
+    "account_ids": ["account-001", "account-002"],
+    "pin_failure_count": 0
   },
   {
     "card_id": "card-002",
@@ -15,7 +16,8 @@
     "expires_at": "2027-08",
     "status": "ACTIVE",
     "pin": "5678",
-    "account_ids": ["account-003"]
+    "account_ids": ["account-003"],
+    "pin_failure_count": 0
   },
   {
     "card_id": "card-003",
@@ -24,7 +26,8 @@
     "expires_at": "2029-04",
     "status": "ACTIVE",
     "pin": "2468",
-    "account_ids": ["account-004", "account-005"]
+    "account_ids": ["account-004", "account-005"],
+    "pin_failure_count": 0
   },
   {
     "card_id": "card-004",
@@ -33,7 +36,8 @@
     "expires_at": "2026-11",
     "status": "ACTIVE",
     "pin": "1357",
-    "account_ids": ["account-006"]
+    "account_ids": ["account-006"],
+    "pin_failure_count": 0
   },
   {
     "card_id": "card-005",
@@ -42,7 +46,8 @@
     "expires_at": "2029-10",
     "status": "LOCKED",
     "pin": "7777",
-    "account_ids": ["account-007"]
+    "account_ids": ["account-007"],
+    "pin_failure_count": 3
   },
   {
     "card_id": "card-006",
@@ -51,7 +56,8 @@
     "expires_at": "2025-09",
     "status": "INACTIVE",
     "pin": "8888",
-    "account_ids": ["account-008"]
+    "account_ids": ["account-008"],
+    "pin_failure_count": 0
   },
   {
     "card_id": "card-007",
@@ -60,6 +66,7 @@
     "expires_at": "2030-03",
     "status": "ACTIVE",
     "pin": "9999",
-    "account_ids": ["account-009"]
+    "account_ids": ["account-009"],
+    "pin_failure_count": 0
   }
 ]

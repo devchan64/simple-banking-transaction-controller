@@ -9,11 +9,25 @@ from .contracts import (
     ERROR_ACCOUNT_LOCKED,
     ERROR_BANK_MAINTENANCE,
     ERROR_INVALID_PIN,
+    ERROR_PIN_ATTEMPTS_EXCEEDED,
 )
 
 
 class BankGatewayError(RuntimeError):
     pass
+
+
+class PinVerificationError(BankGatewayError):
+    def __init__(
+        self,
+        message: str,
+        *,
+        remaining_attempts: int,
+        card_locked: bool,
+    ) -> None:
+        super().__init__(message)
+        self.remaining_attempts = remaining_attempts
+        self.card_locked = card_locked
 
 
 @dataclass(frozen=True)
@@ -25,6 +39,7 @@ class CardRecord:
     status: str
     pin: str
     account_ids: list[str]
+    pin_failure_count: int = 0
 
 
 @dataclass(frozen=True)
@@ -48,19 +63,24 @@ class JsonBankGateway:
         for card in self._read_cards():
             if card.card_number == card_number:
                 return card
-        raise BankGatewayError(f"Unknown card number: {card_number}")
+        raise BankGatewayError(f"알 수 없는 카드 번호입니다: {card_number}")
 
     def get_card_by_id(self, card_id: str) -> CardRecord:
         for card in self._read_cards():
             if card.card_id == card_id:
                 return card
-        raise BankGatewayError(f"Unknown card id: {card_id}")
+        raise BankGatewayError(f"알 수 없는 카드 ID입니다: {card_id}")
 
     def verify_pin(self, card_number: str, pin: str) -> CardRecord:
         self._require_service_available()
         card = self.get_card_by_number(card_number)
         self._require_available_card(card)
-        self._require_matching_pin(card, pin)
+        self._verify_pin_or_update_card(card, pin)
+        if card.pin_failure_count != 0:
+            card = self._save_card(
+                card,
+                pin_failure_count=0,
+            )
         return card
 
     def list_accounts(self, card_id: str) -> list[str]:
@@ -86,7 +106,7 @@ class JsonBankGateway:
         self._require_positive_amount(amount)
         account = self._get_account(account_id)
         if account.balance < amount:
-            raise BankGatewayError(f"Insufficient balance: {account_id}")
+            raise BankGatewayError(f"잔액이 부족합니다: {account_id}")
         updated = AccountRecord(
             account_id=account.account_id, balance=account.balance - amount
         )
@@ -97,7 +117,7 @@ class JsonBankGateway:
         for account in self._read_accounts():
             if account.account_id == account_id:
                 return account
-        raise BankGatewayError(f"Unknown account id: {account_id}")
+        raise BankGatewayError(f"알 수 없는 계좌입니다: {account_id}")
 
     def _save_account(self, updated_account: AccountRecord) -> None:
         accounts = []
@@ -109,12 +129,63 @@ class JsonBankGateway:
             else:
                 accounts.append(account)
         if not found:
-            raise BankGatewayError(f"Unknown account id: {updated_account.account_id}")
+            raise BankGatewayError(
+                f"알 수 없는 계좌입니다: {updated_account.account_id}"
+            )
         self._write_accounts(accounts)
+
+    def _save_card(self, card: CardRecord, **updates: object) -> CardRecord:
+        updated_card = CardRecord(
+            card_id=card.card_id,
+            card_number=card.card_number,
+            cardholder_name=card.cardholder_name,
+            expires_at=card.expires_at,
+            status=updates.get("status", card.status),
+            pin=card.pin,
+            account_ids=card.account_ids,
+            pin_failure_count=updates.get(
+                "pin_failure_count",
+                card.pin_failure_count,
+            ),
+        )
+
+        cards = []
+        found = False
+        for current_card in self._read_cards():
+            if current_card.card_id == updated_card.card_id:
+                cards.append(updated_card)
+                found = True
+            else:
+                cards.append(current_card)
+
+        if not found:
+            raise BankGatewayError(f"알 수 없는 카드 ID입니다: {updated_card.card_id}")
+
+        self._write_cards(cards)
+        return updated_card
 
     def _read_cards(self) -> list[CardRecord]:
         payload = json.loads(self._cards_path.read_text(encoding="utf-8"))
         return [CardRecord(**item) for item in payload]
+
+    def _write_cards(self, cards: list[CardRecord]) -> None:
+        payload = [
+            {
+                "card_id": card.card_id,
+                "card_number": card.card_number,
+                "cardholder_name": card.cardholder_name,
+                "expires_at": card.expires_at,
+                "status": card.status,
+                "pin": card.pin,
+                "account_ids": card.account_ids,
+                "pin_failure_count": card.pin_failure_count,
+            }
+            for card in cards
+        ]
+        self._cards_path.write_text(
+            json.dumps(payload, ensure_ascii=True, indent=2),
+            encoding="utf-8",
+        )
 
     def _read_accounts(self) -> list[AccountRecord]:
         payload = json.loads(self._accounts_path.read_text(encoding="utf-8"))
@@ -135,18 +206,39 @@ class JsonBankGateway:
         if card.status == CardStatus.LOCKED:
             raise BankGatewayError(ERROR_ACCOUNT_LOCKED)
         if card.status != CardStatus.ACTIVE:
-            raise BankGatewayError(f"Inactive card: {card.card_id}")
+            raise BankGatewayError(f"비활성 카드입니다: {card.card_id}")
 
     def _require_service_available(self) -> None:
         if self._maintenance_enabled:
             raise BankGatewayError(ERROR_BANK_MAINTENANCE)
 
-    @staticmethod
-    def _require_matching_pin(card: CardRecord, pin: str) -> None:
+    def _verify_pin_or_update_card(self, card: CardRecord, pin: str) -> None:
         if card.pin != pin:
-            raise BankGatewayError(ERROR_INVALID_PIN)
+            failure_count = card.pin_failure_count + 1
+            remaining_attempts = max(0, 3 - failure_count)
+            if failure_count >= 3:
+                self._save_card(
+                    card,
+                    status=CardStatus.LOCKED,
+                    pin_failure_count=3,
+                )
+                raise PinVerificationError(
+                    ERROR_PIN_ATTEMPTS_EXCEEDED,
+                    remaining_attempts=0,
+                    card_locked=True,
+                )
+
+            self._save_card(
+                card,
+                pin_failure_count=failure_count,
+            )
+            raise PinVerificationError(
+                ERROR_INVALID_PIN,
+                remaining_attempts=remaining_attempts,
+                card_locked=False,
+            )
 
     @staticmethod
     def _require_positive_amount(amount: int) -> None:
         if amount <= 0:
-            raise BankGatewayError(f"Invalid amount: {amount}")
+            raise BankGatewayError(f"올바르지 않은 금액입니다: {amount}")
