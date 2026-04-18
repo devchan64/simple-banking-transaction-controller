@@ -17,18 +17,19 @@
 - 세션 만료 확인
 - 세션 갱신 요청
 - `BankGatewayPort` 호출 orchestration
+- 인증 직후 계좌 목록 조회 결과 생성
 - `SessionResult` 생성
 
 ## 입력
 
 - 타입: `SessionCommand`
-- 방식: command 기반 진입
+- 방식: command 기반 API 요청
 - 규칙: 잘못된 입력은 throw
 
 ## 출력
 
 - 타입: `SessionResult`
-- 목적: 표현 계층이 바로 렌더링 가능한 결과
+- 목적: 표현 계층이 바로 렌더링 가능한 API 응답
 
 ## 상태
 
