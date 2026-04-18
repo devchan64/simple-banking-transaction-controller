@@ -39,6 +39,10 @@
 
 - 환경 준비: `./scripts/setup.sh`
 - 코드 포맷: `bash scripts/run-black.sh`
+- transport 정리: `bash scripts/clean-transport.sh`
+- controller 정리: `bash scripts/clean-controller.sh`
+- banking 정리: `bash scripts/clean-banking.sh`
+- 전체 정리: `bash scripts/clean-all.sh`
 
 ## 테스트
 
@@ -58,6 +62,7 @@ E2E 테스트 범위:
 
 - banking 서버 실행: `bash scripts/run-banking-server.sh`
 - controller 서버 실행: `bash scripts/run-controller-server.sh`
+- ATM CLI Prompt Adapter 실행: `bash scripts/run-atm-cli.sh`
 
 포어그라운드 실행 예:
 ```bash
@@ -68,3 +73,65 @@ bash scripts/run-banking-server.sh
 ```bash
 bash scripts/run-controller-server.sh
 ```
+
+또 다른 터미널에서 사람이 직접 controller 절차를 테스트하려면:
+```bash
+bash scripts/run-atm-cli.sh
+```
+
+`Prompt Adapter`는 유저 테스트용 CLI 도구입니다.
+- 카드 번호 입력
+- PIN 입력
+- 계좌 선택
+- 잔액 조회 / 입금 / 출금 / 카드 반환
+
+을 사람 입력으로 진행하면서 controller 응답 메시지를 그대로 보여줍니다.
+
+## Prompt Adapter 실행 방법
+
+1. banking 서버 실행
+```bash
+bash scripts/run-banking-server.sh
+```
+
+2. 다른 터미널에서 controller 서버 실행
+```bash
+bash scripts/run-controller-server.sh
+```
+
+3. 또 다른 터미널에서 Prompt Adapter 실행
+```bash
+bash scripts/run-atm-cli.sh
+```
+
+기본 경로는 다음과 같습니다.
+- transport: `.transport`
+- banking server runtime: `.banking`
+- controller server runtime: `.controller`
+- Prompt Adapter: `.transport`로 request/response 파일을 보냄
+
+다른 controller runtime 경로를 사용할 때:
+```bash
+bash scripts/run-atm-cli.sh /path/to/transport-root
+```
+
+controller 서버의 transport/runtime/banking 경로를 각각 바꾸려면:
+```bash
+bash scripts/run-controller-server.sh /path/to/transport-root /path/to/controller-runtime /path/to/banking-root
+```
+
+## 디렉터리 용도
+
+참고용 실행 디렉터리는 다음과 같습니다.
+
+- `.transport`
+  - Prompt Adapter와 controller 서버가 request/response 파일을 주고받는 전송 경계
+- `.controller`
+  - controller 서버의 세션 상태 저장 경계
+  - `session-history.json`, `active-sessions.json`이 생성됨
+- `.banking`
+  - banking 서버의 실행 경계
+  - bank용 `mock-db`, `session-history.json`, `active-sessions.json`이 생성됨
+- `.test-run`
+  - 테스트 실행 중 임시 산출물을 모으는 디렉터리
+  - 기본 테스트와 E2E 테스트가 매 실행마다 다시 만듦

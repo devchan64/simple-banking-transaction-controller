@@ -3,6 +3,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+TRANSPORT_ROOT="${1:-$ROOT_DIR/.transport}"
 
 cd "$ROOT_DIR"
 
@@ -10,11 +11,4 @@ if [[ -f ".venv/bin/activate" ]]; then
     source ".venv/bin/activate"
 fi
 
-rm -rf .test-run
-mkdir -p .test-run
-
-echo "[test-e2e] running E2E specs"
-
-PYTHONPATH=src:. python3 -m unittest \
-    tests.e2e.test_flow_e2e_spec \
-    tests.e2e.test_prompt_adapter_spec
+PYTHONPATH=src python -m prompt_adapter "$TRANSPORT_ROOT"

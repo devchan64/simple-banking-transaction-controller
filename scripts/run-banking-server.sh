@@ -3,7 +3,7 @@
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-BANKING_ROOT="${1:-$ROOT_DIR/.transport/banking}"
+BANKING_ROOT="${1:-$ROOT_DIR/.banking}"
 
 cd "$ROOT_DIR"
 
