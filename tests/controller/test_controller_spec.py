@@ -288,6 +288,10 @@ class BankingFlowControllerSpec(TestRootSupport, unittest.TestCase):
         self.assertEqual(TransactionType.BALANCE, result.transaction_type)
         self.assertEqual(1200, result.balance)
         self.assertEqual("account-001", result.selected_account_id)
+        self.assertEqual(
+            SessionState.ACCOUNT_SELECTED,
+            self._stored_state(result.session_token),
+        )
 
     def test_withdraw_flow_updates_balance_and_allows_end_session(self) -> None:
         print(spec_text("출금 후 결과를 보고하고 FORCE_END_SESSION 으로 종료할 수 있다"))
@@ -318,6 +322,10 @@ class BankingFlowControllerSpec(TestRootSupport, unittest.TestCase):
                 "session_token": selected.session_token,
                 "amount": 100,
             }
+        )
+        self.assertEqual(
+            SessionState.ACCOUNT_SELECTED,
+            self._stored_state(withdraw.session_token),
         )
         closed = self.controller.handle(
             {
@@ -367,6 +375,59 @@ class BankingFlowControllerSpec(TestRootSupport, unittest.TestCase):
         self.assertEqual(TransactionType.DEPOSIT, deposit.transaction_type)
         self.assertEqual(1500, deposit.balance)
         self.assertEqual(300, deposit.requested_amount)
+        self.assertEqual(
+            SessionState.ACCOUNT_SELECTED,
+            self._stored_state(deposit.session_token),
+        )
+
+    def test_balance_then_deposit_flow_keeps_followup_transaction_available(self) -> None:
+        print(spec_text("잔액 조회 후에도 같은 세션에서 바로 입금할 수 있다"))
+
+        session = self.controller.handle(
+            {
+                "command_type": CommandType.INSERT_CARD,
+                "card_number": "4000-1234-5678-0001",
+            }
+        )
+        authenticated = self.controller.handle(
+            {
+                "command_type": CommandType.SUBMIT_PIN,
+                "session_token": session.session_token,
+                "pin": "1234",
+            }
+        )
+        selected = self.controller.handle(
+            {
+                "command_type": CommandType.SELECT_ACCOUNT,
+                "session_token": authenticated.session_token,
+                "account_id": "account-001",
+            }
+        )
+        balance = self.controller.handle(
+            {
+                "command_type": CommandType.REQUEST_BALANCE,
+                "session_token": selected.session_token,
+            }
+        )
+        deposit = self.controller.handle(
+            {
+                "command_type": CommandType.REQUEST_DEPOSIT,
+                "session_token": balance.session_token,
+                "amount": 300,
+            }
+        )
+
+        self.assertEqual(TransactionType.BALANCE, balance.transaction_type)
+        self.assertEqual(1200, balance.balance)
+        self.assertEqual(SessionState.RESULT_REPORTED, balance.session_state)
+        self.assertEqual(TransactionType.DEPOSIT, deposit.transaction_type)
+        self.assertEqual(1500, deposit.balance)
+        self.assertEqual(300, deposit.requested_amount)
+        self.assertEqual(SessionState.RESULT_REPORTED, deposit.session_state)
+        self.assertEqual(
+            SessionState.ACCOUNT_SELECTED,
+            self._stored_state(deposit.session_token),
+        )
 
     def test_withdraw_insufficient_balance_fails(self) -> None:
         print(spec_text("잔액 부족 출금 요청은 오류를 반환한다"))

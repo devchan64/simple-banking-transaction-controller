@@ -159,7 +159,9 @@ class BankingFlowController:
         except BankGatewayError as exc:
             raise ControllerError(str(exc)) from exc
 
-        updated_session = session.model_copy(update={"session_state": SessionState.RESULT_REPORTED})
+        updated_session = session.model_copy(
+            update={"session_state": SessionState.ACCOUNT_SELECTED}
+        )
         self._session_store.save_session(updated_session)
         return SessionResult(
             succeeded=True,
@@ -182,7 +184,9 @@ class BankingFlowController:
         except BankGatewayError as exc:
             raise ControllerError(str(exc)) from exc
 
-        updated_session = session.model_copy(update={"session_state": SessionState.RESULT_REPORTED})
+        updated_session = session.model_copy(
+            update={"session_state": SessionState.ACCOUNT_SELECTED}
+        )
         self._session_store.save_session(updated_session)
         return SessionResult(
             succeeded=True,
@@ -206,7 +210,9 @@ class BankingFlowController:
         except BankGatewayError as exc:
             raise ControllerError(str(exc)) from exc
 
-        updated_session = session.model_copy(update={"session_state": SessionState.RESULT_REPORTED})
+        updated_session = session.model_copy(
+            update={"session_state": SessionState.ACCOUNT_SELECTED}
+        )
         self._session_store.save_session(updated_session)
         return SessionResult(
             succeeded=True,
