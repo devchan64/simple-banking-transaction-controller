@@ -11,13 +11,14 @@
 ## 방식
 
 - 카드/계좌 데이터: JSON
-- 세션 정보: in-memory
+- 세션 정보: JSON
 - 범위: test only
 
 ## 데이터
 
 - `cards.json`
 - `accounts.json`
+- `sessions.json`
 - `session_id`
 - `authenticated flag`
 - `expiration timestamp`
@@ -43,6 +44,7 @@
 - lightweight storage
 - mock repository
 - json file store
+- session file store
 - session expiration
 - session refresh
 - replaceable boundary

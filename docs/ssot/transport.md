@@ -2,15 +2,16 @@
 
 ## 목적
 
-- controller 호출 감싸기
-- 테스트 흐름 유지
+- 프로그램 간 호출 연결
+- 상태머신 요청 전달
 - 최대한 단순하게 구현
-- 이후 transport 교체 대비
+- 이후 다른 transport 교체 대비
 
 ## 방식
 
-- in-process call
-- function dispatch
+- file-based request
+- file-based response
+- multi-process friendly
 
 ## 포트
 
@@ -31,13 +32,17 @@
 
 ## 책임
 
-- controller 호출
+- request 파일 작성 또는 전달
+- response 파일 읽기 또는 반환
+- controller 프로그램과 CLI 프로그램 연결
 - 예외를 error response 로 변환
 
 ## 구현 키워드
 
 - lightweight
-- pass-through
+- file transport
+- request/response json
+- process boundary
 - exception mapping
 - no business logic
 - replaceable boundary
