@@ -7,8 +7,6 @@ from pathlib import Path
 from banking import (
     ERROR_ACCOUNT_LOCKED,
     ERROR_BANK_MAINTENANCE,
-    ERROR_INVALID_PIN,
-    JsonBankGateway,
     SessionHistoryStore,
 )
 from controller import (
@@ -19,6 +17,7 @@ from controller import (
     SessionState,
     TransactionType,
 )
+from tests.support.fake_bank_gateway import FakeBankGateway
 from tests.support.spec_support import TestRootSupport, spec_text
 
 
@@ -41,7 +40,7 @@ class BankingFlowControllerSpec(TestRootSupport, unittest.TestCase):
         self.controller = self._build_controller()
 
     def _build_controller(self, maintenance_enabled: bool = False) -> BankingFlowController:
-        self.bank_gateway = JsonBankGateway(
+        self.bank_gateway = FakeBankGateway(
             self.cards_path,
             self.accounts_path,
             maintenance_enabled=maintenance_enabled,

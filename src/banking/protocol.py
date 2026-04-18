@@ -32,3 +32,4 @@ class BankResponse(BaseModel):
     payload: dict[str, object] | None = None
     error_code: str | None = None
     error_message: str | None = None
+    error_details: dict[str, object] | None = None

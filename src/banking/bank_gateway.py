@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Protocol
 
 from .contracts import (
     CardStatus,
@@ -28,6 +29,22 @@ class PinVerificationError(BankGatewayError):
         super().__init__(message)
         self.remaining_attempts = remaining_attempts
         self.card_locked = card_locked
+
+
+class BankGateway(Protocol):
+    def get_card_by_number(self, card_number: str) -> "CardRecord": ...
+
+    def get_card_by_id(self, card_id: str) -> "CardRecord": ...
+
+    def verify_pin(self, card_number: str, pin: str) -> "CardRecord": ...
+
+    def list_accounts(self, card_id: str) -> list[str]: ...
+
+    def get_balance(self, account_id: str) -> int: ...
+
+    def deposit(self, account_id: str, amount: int) -> int: ...
+
+    def withdraw(self, account_id: str, amount: int) -> int: ...
 
 
 @dataclass(frozen=True)

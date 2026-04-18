@@ -101,6 +101,15 @@ def _handle_request(gateway: JsonBankGateway, request: BankRequest) -> BankRespo
             request_id=request.request_id,
             error_code=type(exc).__name__,
             error_message=str(exc),
+            error_details={
+                key: value
+                for key, value in {
+                    "remaining_attempts": getattr(exc, "remaining_attempts", None),
+                    "card_locked": getattr(exc, "card_locked", None),
+                }.items()
+                if value is not None
+            }
+            or None,
         )
 
 
