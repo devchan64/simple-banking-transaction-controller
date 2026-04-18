@@ -25,6 +25,8 @@
 
 - controller 요청 전달
 - persistence 접근 위임
+- PIN 검증
+- 금액 검증
 - 필요한 데이터 반환
 
 ## 구현 기준
@@ -41,4 +43,5 @@
 - thin gateway
 - simple bridge
 - mock-friendly
-- no business logic
+- bank data validation
+- amount validation

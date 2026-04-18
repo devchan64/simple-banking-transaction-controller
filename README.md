@@ -20,10 +20,10 @@
 
 ## 계층
 
-- `Controller`: `handle(command)` / 상태 검증 / 상태 전이 / 결과 생성 / 세션 인증 확인 / 세션 만료 확인 / 세션 갱신 처리
+- `Controller`: `handle(command)` / 세션 검증 / 상태 전이 / 결과 생성 / 세션 만료 확인 / 세션 갱신 처리
 - `Prompt Adapter`: 테스트용 CLI 도구 / 입력 수집 / `SessionCommand` 변환 / 결과 출력
 - `Transport`: 파일 기반 request/response 로 프로그램 간 요청을 잇는 작은 보조 계층
-- `BankGateway`: 외부 데이터 접근을 잇는 작은 연결 도구
+- `BankGateway`: 외부 데이터 접근 / PIN 검증 / 금액 검증을 맡는 작은 연결 도구
 - `Persistence`: controller 검증용 최소 mock 저장 / 세션 상태 저장
 
 ## 목적
