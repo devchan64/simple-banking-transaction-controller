@@ -35,10 +35,26 @@
 - 최소 구현 흐름 우선
 - 확장을 고려한 인터페이스 유지
 
+## 개발 환경
+
+- `requirements.txt` 기준 의존성 설치
+- 핵심 의존성: `pydantic`
+- Python `3.12.3` 사용
+- Python 3
+- Bash
+- 로컬 파일시스템 기반 실행 환경
+- 네트워크 없이 동작하는 mock banking / controller / transport 구조
+
+일상적인 개발 순서:
+- `bash scripts/setup.sh`
+- `bash scripts/test-basic.sh`
+- 필요 시 `bash scripts/test-e2e.sh`
+
 ## 실행
 
-- 환경 준비: `./scripts/setup.sh`
+- 환경 준비: `bash scripts/setup.sh`
 - 코드 포맷: `bash scripts/run-black.sh`
+- 바이트 검사: `bash scripts/check-bytes.sh`
 - transport 정리: `bash scripts/clean-transport.sh`
 - controller 정리: `bash scripts/clean-controller.sh`
 - banking 정리: `bash scripts/clean-banking.sh`
