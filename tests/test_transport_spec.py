@@ -21,7 +21,9 @@ class FileTransportSpec(TestRootSupport, unittest.TestCase):
 
     def test_dispatch_writes_request_and_returns_response_file_result(self) -> None:
         # 정상 흐름: 서로 다른 두 프로세스가 request/response 파일로 통신해야 한다.
-        print("[스펙] 두 개의 프로세스가 request/response 파일로 성공 응답을 주고받는다")
+        print(
+            "[스펙] 두 개의 프로세스가 request/response 파일로 성공 응답을 주고받는다"
+        )
         transport = FileTransport(self.transport_root)
         request_path = self.transport_root / "requests" / "req-001.json"
         response_path = self.transport_root / "responses" / "req-001.json"
@@ -62,7 +64,9 @@ class FileTransportSpec(TestRootSupport, unittest.TestCase):
 
     def test_dispatch_maps_controller_exception_to_error_response_file(self) -> None:
         # 실패 흐름: 별도 프로세스의 controller 예외는 response 파일 error 필드로 기록되어야 한다.
-        print("[스펙] controller 프로세스 예외를 response 파일의 error 응답으로 변환한다")
+        print(
+            "[스펙] controller 프로세스 예외를 response 파일의 error 응답으로 변환한다"
+        )
         transport = FileTransport(self.transport_root)
         request_path = self.transport_root / "requests" / "req-002.json"
         response_path = self.transport_root / "responses" / "req-002.json"
@@ -91,9 +95,13 @@ class FileTransportSpec(TestRootSupport, unittest.TestCase):
         self.assertEqual("ValueError", response.error_code)
         self.assertEqual("invalid state", response.error_message)
 
-    def test_dispatch_keeps_session_id_in_request_file_without_reinterpretation(self) -> None:
+    def test_dispatch_keeps_session_id_in_request_file_without_reinterpretation(
+        self,
+    ) -> None:
         # transport는 두 프로세스 사이에서 session_id를 판단하지 않고 그대로 전달해야 한다.
-        print("[스펙] session_id는 두 프로세스 사이에서 재해석하지 않고 그대로 유지한다")
+        print(
+            "[스펙] session_id는 두 프로세스 사이에서 재해석하지 않고 그대로 유지한다"
+        )
         transport = FileTransport(self.transport_root)
         request_path = self.transport_root / "requests" / "req-003.json"
         response_path = self.transport_root / "responses" / "req-003.json"
@@ -133,7 +141,9 @@ class FileTransportSpec(TestRootSupport, unittest.TestCase):
         mode: str,
     ) -> subprocess.Popen[str]:
         env = os.environ.copy()
-        env["PYTHONPATH"] = f"src{os.pathsep}{env.get('PYTHONPATH', '')}".rstrip(os.pathsep)
+        env["PYTHONPATH"] = f"src{os.pathsep}{env.get('PYTHONPATH', '')}".rstrip(
+            os.pathsep
+        )
         return subprocess.Popen(
             [
                 "python3",

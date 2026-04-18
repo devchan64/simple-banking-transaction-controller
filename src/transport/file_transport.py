@@ -7,7 +7,6 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
-
 WORKSPACE_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_TRANSPORT_ROOT = Path(
     os.environ.get(
