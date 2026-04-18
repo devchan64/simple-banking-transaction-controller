@@ -34,3 +34,9 @@
 - 네트워크 없는 데모 환경
 - 최소 구현 흐름 우선
 - 확장을 고려한 인터페이스 유지
+
+## 실행
+
+- 환경 준비: `./scripts/setup.sh`
+- 테스트 실행: `bash scripts/run-tests.sh`
+- 코드 포맷: `bash scripts/run-black.sh`
