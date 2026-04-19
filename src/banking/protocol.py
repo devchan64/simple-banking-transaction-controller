@@ -6,6 +6,9 @@ from pydantic import BaseModel, ConfigDict
 
 
 class BankAction(StrEnum):
+    CREATE_SESSION = "CREATE_SESSION"
+    GET_SESSION = "GET_SESSION"
+    REFRESH_SESSION = "REFRESH_SESSION"
     GET_CARD_BY_NUMBER = "GET_CARD_BY_NUMBER"
     GET_CARD_BY_ID = "GET_CARD_BY_ID"
     VERIFY_PIN = "VERIFY_PIN"
@@ -20,6 +23,7 @@ class BankRequest(BaseModel):
 
     request_id: str
     action: BankAction
+    session_token: str | None = None
     card_number: str | None = None
     card_id: str | None = None
     pin: str | None = None

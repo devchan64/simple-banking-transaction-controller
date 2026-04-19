@@ -5,9 +5,10 @@ import json
 import time
 from pathlib import Path
 
-from .bank_gateway import BankGatewayError, JsonBankGateway
+from .bank_gateway import BankGateway, BankGatewayError, JsonBankGateway
 from .protocol import BankAction, BankRequest, BankResponse
 from .runtime import prepare_banking_runtime
+from .session import BankingSessionStore, SessionHistoryStore
 
 
 def run_server(
@@ -22,9 +23,15 @@ def run_server(
     responses_dir.mkdir(parents=True, exist_ok=True)
 
     runtime = prepare_banking_runtime(root)
+    history_store = SessionHistoryStore(runtime.session_history_path)
+    session_store = BankingSessionStore(
+        runtime.active_sessions_path,
+        history_store,
+    )
     gateway = JsonBankGateway(
         runtime.cards_path,
         runtime.accounts_path,
+        session_store=session_store,
         maintenance_enabled=maintenance_enabled,
     )
     print("[banking.server] started")
@@ -63,7 +70,7 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def _process_next_request(
-    gateway: JsonBankGateway,
+    gateway: BankGateway,
     requests_dir: Path,
     responses_dir: Path,
 ) -> bool:
@@ -92,7 +99,7 @@ def _process_next_request(
     return False
 
 
-def _handle_request(gateway: JsonBankGateway, request: BankRequest) -> BankResponse:
+def _handle_request(gateway: BankGateway, request: BankRequest) -> BankResponse:
     try:
         payload = _dispatch_action(gateway, request)
         return BankResponse(request_id=request.request_id, payload=payload)
@@ -114,9 +121,15 @@ def _handle_request(gateway: JsonBankGateway, request: BankRequest) -> BankRespo
 
 
 def _dispatch_action(
-    gateway: JsonBankGateway,
+    gateway: BankGateway,
     request: BankRequest,
 ) -> dict[str, object]:
+    if request.action == BankAction.CREATE_SESSION:
+        return gateway.create_session(request.card_id).__dict__
+    if request.action == BankAction.GET_SESSION:
+        return gateway.get_session(request.session_token).__dict__
+    if request.action == BankAction.REFRESH_SESSION:
+        return gateway.refresh_session(request.session_token).__dict__
     if request.action == BankAction.GET_CARD_BY_NUMBER:
         return gateway.get_card_by_number(request.card_number).__dict__
     if request.action == BankAction.GET_CARD_BY_ID:

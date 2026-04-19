@@ -43,13 +43,34 @@ class BankingSdk(BankGateway):
         return CardRecord(**payload)
 
     def create_session(self, card_id: str) -> BankingSession:
-        raise BankGatewayError("세션 생성은 아직 구현되지 않았습니다")
+        payload = self._dispatch(
+            BankRequest(
+                request_id=self._request_id(),
+                action=BankAction.CREATE_SESSION,
+                card_id=card_id,
+            )
+        )
+        return BankingSession(**payload)
 
     def get_session(self, session_token: str) -> BankingSession:
-        raise BankGatewayError("세션 조회는 아직 구현되지 않았습니다")
+        payload = self._dispatch(
+            BankRequest(
+                request_id=self._request_id(),
+                action=BankAction.GET_SESSION,
+                session_token=session_token,
+            )
+        )
+        return BankingSession(**payload)
 
     def refresh_session(self, session_token: str) -> BankingSession:
-        raise BankGatewayError("세션 갱신은 아직 구현되지 않았습니다")
+        payload = self._dispatch(
+            BankRequest(
+                request_id=self._request_id(),
+                action=BankAction.REFRESH_SESSION,
+                session_token=session_token,
+            )
+        )
+        return BankingSession(**payload)
 
     def get_card_by_id(self, card_id: str) -> CardRecord:
         payload = self._dispatch(

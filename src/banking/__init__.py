@@ -6,6 +6,7 @@ from .bank_gateway import (
     CardRecord,
     JsonBankGateway,
     PinVerificationError,
+    SessionExpiredError,
 )
 from .contracts import (
     CardStatus,
@@ -17,7 +18,7 @@ from .contracts import (
 from .protocol import BankAction, BankRequest, BankResponse
 from .runtime import BankingRuntimePaths, prepare_banking_runtime
 from .sdk import BankingSdk
-from .session import SessionHistoryStore, SessionRecord
+from .session import BankingSessionStore, SessionHistoryStore, SessionRecord
 
 __all__ = [
     "AccountRecord",
@@ -25,6 +26,7 @@ __all__ = [
     "BankGateway",
     "BankingSession",
     "BankGatewayError",
+    "BankingSessionStore",
     "BankingSdk",
     "BankingRuntimePaths",
     "BankRequest",
@@ -37,6 +39,7 @@ __all__ = [
     "ERROR_PIN_ATTEMPTS_EXCEEDED",
     "JsonBankGateway",
     "PinVerificationError",
+    "SessionExpiredError",
     "prepare_banking_runtime",
     "SessionHistoryStore",
     "SessionRecord",

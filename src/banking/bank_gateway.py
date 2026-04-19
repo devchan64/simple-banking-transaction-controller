@@ -18,6 +18,10 @@ class BankGatewayError(RuntimeError):
     pass
 
 
+class SessionExpiredError(BankGatewayError):
+    pass
+
+
 class PinVerificationError(BankGatewayError):
     def __init__(
         self,
@@ -83,10 +87,12 @@ class JsonBankGateway:
         self,
         cards_path: str | Path,
         accounts_path: str | Path,
+        session_store: object | None = None,
         maintenance_enabled: bool = False,
     ) -> None:
         self._cards_path = Path(cards_path)
         self._accounts_path = Path(accounts_path)
+        self._session_store = session_store
         self._maintenance_enabled = maintenance_enabled
 
     def get_card_by_number(self, card_number: str) -> CardRecord:
@@ -96,13 +102,20 @@ class JsonBankGateway:
         raise BankGatewayError(f"알 수 없는 카드 번호입니다: {card_number}")
 
     def create_session(self, card_id: str) -> BankingSession:
-        raise BankGatewayError("세션 생성은 아직 구현되지 않았습니다")
+        self._require_session_store()
+        self._require_service_available()
+        self.get_card_by_id(card_id)
+        return self._session_store.create_session(card_id)
 
     def get_session(self, session_token: str) -> BankingSession:
-        raise BankGatewayError("세션 조회는 아직 구현되지 않았습니다")
+        self._require_session_store()
+        self._require_service_available()
+        return self._session_store.get_session(session_token)
 
     def refresh_session(self, session_token: str) -> BankingSession:
-        raise BankGatewayError("세션 갱신은 아직 구현되지 않았습니다")
+        self._require_session_store()
+        self._require_service_available()
+        return self._session_store.refresh_session(session_token)
 
     def get_card_by_id(self, card_id: str) -> CardRecord:
         for card in self._read_cards():
@@ -250,6 +263,10 @@ class JsonBankGateway:
     def _require_service_available(self) -> None:
         if self._maintenance_enabled:
             raise BankGatewayError(ERROR_BANK_MAINTENANCE)
+
+    def _require_session_store(self) -> None:
+        if self._session_store is None:
+            raise BankGatewayError("세션 저장소가 설정되지 않았습니다")
 
     def _verify_pin_or_update_card(self, card: CardRecord, pin: str) -> None:
         if card.pin != pin:
