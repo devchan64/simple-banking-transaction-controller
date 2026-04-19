@@ -1,6 +1,7 @@
 from .bank_gateway import (
     AccountRecord,
     BankGateway,
+    BankingSession,
     BankGatewayError,
     CardRecord,
     JsonBankGateway,
@@ -22,6 +23,7 @@ __all__ = [
     "AccountRecord",
     "BankAction",
     "BankGateway",
+    "BankingSession",
     "BankGatewayError",
     "BankingSdk",
     "BankingRuntimePaths",

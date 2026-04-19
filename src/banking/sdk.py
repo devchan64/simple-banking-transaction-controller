@@ -7,6 +7,7 @@ from pathlib import Path
 
 from .bank_gateway import (
     BankGateway,
+    BankingSession,
     BankGatewayError,
     CardRecord,
     PinVerificationError,
@@ -40,6 +41,15 @@ class BankingSdk(BankGateway):
             )
         )
         return CardRecord(**payload)
+
+    def create_session(self, card_id: str) -> BankingSession:
+        raise BankGatewayError("세션 생성은 아직 구현되지 않았습니다")
+
+    def get_session(self, session_token: str) -> BankingSession:
+        raise BankGatewayError("세션 조회는 아직 구현되지 않았습니다")
+
+    def refresh_session(self, session_token: str) -> BankingSession:
+        raise BankGatewayError("세션 갱신은 아직 구현되지 않았습니다")
 
     def get_card_by_id(self, card_id: str) -> CardRecord:
         payload = self._dispatch(

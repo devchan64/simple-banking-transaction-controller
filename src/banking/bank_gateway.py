@@ -31,7 +31,20 @@ class PinVerificationError(BankGatewayError):
         self.card_locked = card_locked
 
 
+@dataclass(frozen=True)
+class BankingSession:
+    session_token: str
+    card_id: str
+    expires_at: str
+
+
 class BankGateway(Protocol):
+    def create_session(self, card_id: str) -> BankingSession: ...
+
+    def get_session(self, session_token: str) -> BankingSession: ...
+
+    def refresh_session(self, session_token: str) -> BankingSession: ...
+
     def get_card_by_number(self, card_number: str) -> "CardRecord": ...
 
     def get_card_by_id(self, card_id: str) -> "CardRecord": ...
@@ -81,6 +94,15 @@ class JsonBankGateway:
             if card.card_number == card_number:
                 return card
         raise BankGatewayError(f"알 수 없는 카드 번호입니다: {card_number}")
+
+    def create_session(self, card_id: str) -> BankingSession:
+        raise BankGatewayError("세션 생성은 아직 구현되지 않았습니다")
+
+    def get_session(self, session_token: str) -> BankingSession:
+        raise BankGatewayError("세션 조회는 아직 구현되지 않았습니다")
+
+    def refresh_session(self, session_token: str) -> BankingSession:
+        raise BankGatewayError("세션 갱신은 아직 구현되지 않았습니다")
 
     def get_card_by_id(self, card_id: str) -> CardRecord:
         for card in self._read_cards():
