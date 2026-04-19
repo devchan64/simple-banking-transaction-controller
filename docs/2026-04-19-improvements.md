@@ -70,40 +70,12 @@
 
 - `docs/ssot/controller.md`
 
-## 3. Transport 테스트 책임 분리 필요성 문서화
-
-현재 `tests/transport/test_transport_spec.py` 는
-transport 자체 계약 검증과 서버 경계 검토가 함께 섞여 있다.
-
-또 `tests/transport/worker_process.py` 는
-실제 서버 엔트리포인트가 아니라 요청 하나만 처리하는 과도기 worker 로 남아 있다.
-
-문서에 보강되면 좋은 내용:
-
-- transport 단일 계약 테스트와 서버 통합 테스트를 구분해야 한다는 점
-- transport 테스트가 확인해야 할 최소 범위
-  - request 기록
-  - response 읽기
-  - request/response 연결
-  - payload 직렬화 유지
-- 서버 기반 검증이 확인해야 할 범위
-  - 서버 프로세스가 transport 경계를 실제로 읽고 쓰는지
-  - 성공/실패 응답 구조가 계약에 맞는지
-- 현재 worker helper 는 과도기 산출물이라는 설명
-- 장기적으로는 실제 server entry 와 lifecycle 을 더 직접 재사용하는 방향이 자연스럽다는 점
-
-추천 반영 위치:
-
-- `docs/ssot/transport.md`
-- 필요 시 `tests/controller/test_controller_spec.md`
-
-## 4. README 수준의 온보딩 설명 보강
+## 3. README 수준의 온보딩 설명 보강
 
 현재 `README.md` 는 실행 흐름과 계층 개요는 잘 설명하지만,
 다음과 같은 "현재 구조의 미완성 지점"은 거의 드러나지 않는다.
 
 - 세션 경계가 history store 와 active session store 로 분리되어 있는 점
-- transport 테스트가 아직 과도기 구조를 포함하고 있다는 점
 
 README 에 이 모든 세부사항을 길게 넣을 필요는 없지만,
 처음 들어오는 사람이 큰 오해를 하지 않도록 짧은 주석 수준의 안내는 있으면 좋다.
@@ -113,16 +85,15 @@ README 에 이 모든 세부사항을 길게 넣을 필요는 없지만,
 - `현재 한계` 또는 `설계 메모` 섹션 1개 추가
 - 자세한 내용은 SSOT 문서 경로로 링크
 
-## 5. 문서화 우선순위 제안
+## 4. 문서화 우선순위 제안
 
 우선순위가 높은 순서로 정리하면 다음과 같다.
 
 1. `docs/ssot/controller.md` 에 세션 책임의 현재 한계 반영
 2. `docs/ssot/persistence*.md` 에 history store / active session store 분리 설명 반영
-3. `docs/ssot/transport.md` 에 transport 테스트와 worker helper 의 과도기성 반영
-4. `README.md` 에 짧은 온보딩 경고 또는 설계 메모 추가
+3. `README.md` 에 짧은 온보딩 경고 또는 설계 메모 추가
 
-## 6. 문서 작성 원칙
+## 5. 문서 작성 원칙
 
 이 개선 항목들을 실제 문서에 반영할 때는 다음 원칙을 유지하는 편이 좋다.
 

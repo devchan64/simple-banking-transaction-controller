@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import subprocess
+import sys
 import time
 from pathlib import Path
 
@@ -22,7 +23,7 @@ class ModuleProcessSupport:
     @classmethod
     def run_module(cls, module_name: str, *args: str) -> subprocess.CompletedProcess[str]:
         return subprocess.run(
-            ["python3", "-m", module_name, *map(str, args)],
+            [sys.executable, "-m", module_name, *map(str, args)],
             cwd=cls.repo_root(),
             env=cls.python_env(),
             text=True,
@@ -33,7 +34,7 @@ class ModuleProcessSupport:
     @classmethod
     def start_module(cls, module_name: str, *args: str) -> subprocess.Popen[str]:
         return subprocess.Popen(
-            ["python3", "-m", module_name, *map(str, args)],
+            [sys.executable, "-m", module_name, *map(str, args)],
             cwd=cls.repo_root(),
             env=cls.python_env(),
             text=True,
