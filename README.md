@@ -25,7 +25,7 @@
 - `Prompt Adapter`: 테스트용 CLI 도구 / 입력 수집 / `SessionCommand` 변환 / 결과 출력
 - `Transport`: 파일 기반 request/response 로 프로그램 간 요청을 잇는 작은 보조 계층
 - `BankGateway`: 외부 데이터 접근 / PIN 검증 / 금액 검증을 맡는 작은 연결 도구
-- `Persistence`: controller 검증용 최소 mock 저장 / 세션 상태 저장
+- `Runtime Files`: banking / controller 가 각자 사용하는 최소 JSON 파일 구조
 
 경계 메모:
 - `Transport` 는 통신 수단이다
@@ -36,7 +36,8 @@
 세션 메모:
 - 장기적으로 세션 생성과 유효기간 관리는 `banking` 이 책임지는 구조를 목표로 한다
 - `controller` 는 banking 이 발급한 세션 토큰과 유효기간 정보를 신뢰해 흐름을 제어한다
-- 현재의 `session-history.json` 과 `active-sessions.json` 구조는 과도기 구현이다
+- `banking` runtime 의 `session-history.json`, `active-sessions.json` 구조는 과도기 구현이다
+- `controller` runtime 의 `active-sessions.json` 은 세션 원천이 아니라 절차 기록 파일이다
 
 ## 목적
 
@@ -154,10 +155,11 @@ bash scripts/run-controller-server.sh /path/to/transport-root /path/to/controlle
 - `.transport`
   - Prompt Adapter와 controller 서버가 request/response 파일을 주고받는 전송 경계
 - `.controller`
-  - controller 서버의 현재 상태 저장 경계
-  - `session-history.json`, `active-sessions.json`이 생성됨
+  - controller 서버의 runtime 경계
+  - `active-sessions.json`이 생성됨
+  - controller 절차 기록 파일만 둠
 - `.banking`
-  - banking 서버의 실행 경계
+  - banking 서버의 runtime 경계
   - bank용 `mock-db`, `session-history.json`, `active-sessions.json`이 생성됨
 - `.test-run`
   - 테스트 실행 중 임시 산출물을 모으는 디렉터리

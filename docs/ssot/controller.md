@@ -50,6 +50,21 @@
 - controller 가 세션 생명주기의 단일 저장 원천을 직접 소유하면 안 된다
 - controller 의 로컬 파일 기록은 세션 lifecycle manager 가 아니라 절차 기록 용도다
 
+## 런타임 구조
+
+- `controller` runtime
+  - `active-sessions.json`
+  - controller 절차 기록 파일
+
+## 세션 파일 메모
+
+- `active-sessions.json`
+  - 위치: `controller` runtime root
+  - controller 절차 기록을 남기는 파일
+
+controller 런타임 파일은 세션 lifecycle 원천이 아니라
+controller 절차 진행을 관찰하기 위한 기록 파일로 본다.
+
 ## 의존성
 
 - 직접 의존: `BankGatewayPort`
