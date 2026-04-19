@@ -7,7 +7,6 @@ from pathlib import Path
 from banking import (
     ERROR_ACCOUNT_LOCKED,
     ERROR_BANK_MAINTENANCE,
-    SessionHistoryStore,
 )
 from controller import (
     BankingFlowController,
@@ -31,7 +30,6 @@ class BankingFlowControllerSpec(TestRootSupport, unittest.TestCase):
 
         self.cards_path = self.test_root / "cards.json"
         self.accounts_path = self.test_root / "accounts.json"
-        self.session_history_path = self.test_root / "session-history.json"
         self.active_sessions_path = self.test_root / "active-sessions.json"
 
         shutil.copy(Path("mock-db/cards.json"), self.cards_path)
@@ -45,11 +43,9 @@ class BankingFlowControllerSpec(TestRootSupport, unittest.TestCase):
             self.accounts_path,
             maintenance_enabled=maintenance_enabled,
         )
-        self.session_history_store = SessionHistoryStore(self.session_history_path)
         self.session_store = JsonSessionStore(self.active_sessions_path)
         return BankingFlowController(
             bank_gateway=self.bank_gateway,
-            session_history_store=self.session_history_store,
             session_store=self.session_store,
         )
 

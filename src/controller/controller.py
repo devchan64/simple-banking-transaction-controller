@@ -43,7 +43,6 @@ from banking import (
     BankGatewayError,
     ERROR_PIN_ATTEMPTS_EXCEEDED,
     PinVerificationError,
-    SessionHistoryStore,
 )
 
 from .command import CommandValidationError, CommandValidator, SessionCommand
@@ -70,11 +69,9 @@ class BankingFlowController:
     def __init__(
         self,
         bank_gateway: BankGateway,
-        session_history_store: SessionHistoryStore,
         session_store: JsonSessionStore,
     ) -> None:
         self._bank_gateway = bank_gateway
-        self._session_history_store = session_history_store
         self._session_store = session_store
 
     def handle(self, payload: SessionCommand | dict[str, object]) -> SessionResult:
@@ -108,18 +105,21 @@ class BankingFlowController:
     def _handle_insert_card(self, command: SessionCommand) -> SessionResult:
         """카드 입력으로 새 세션을 시작한다.
 
-        현재는 session history 에서 토큰을 발급한 뒤 active session 저장소에
-        다시 세션을 생성한다. 이 이중 저장 구조는 동작은 하지만,
-        장기적으로는 발급과 활성 상태 관리 책임을 더 명확히 정리할 필요가 있다.
+        세션 생성은 banking 에 위임하고,
+        controller 는 banking 이 발급한 토큰으로 로컬 상태를 시작한다.
         """
         card = self._bank_gateway.get_card_by_number(command.card_number)
-        record = self._session_history_store.issue_session(card.card_id)
-        self._session_store.create_session(record.session_token, card.card_id, card.card_number)
+        session = self._bank_gateway.create_session(card.card_id)
+        self._session_store.create_session(
+            session.session_token,
+            card.card_id,
+            card.card_number,
+        )
         return SessionResult(
             succeeded=True,
             status_code="SESSION_STARTED",
             session_state=SessionState.CARD_INSERTED,
-            session_token=record.session_token,
+            session_token=session.session_token,
             message="카드를 확인했습니다. PIN을 입력해주세요.",
             session_closed=False,
         )
