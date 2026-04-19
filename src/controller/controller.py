@@ -302,10 +302,11 @@ class BankingFlowController:
         )
 
     def _load_session(self, session_token: str | None) -> StoredSession:
-        """세션 토큰으로 활성 세션 저장소에서 현재 세션을 읽어온다."""
+        """세션 토큰을 banking 과 로컬 상태 저장소 양쪽에서 확인한다."""
         try:
+            self._bank_gateway.get_session(session_token)
             return self._session_store.get_session(session_token)
-        except SessionStoreError as exc:
+        except (BankGatewayError, SessionStoreError) as exc:
             raise ControllerError(str(exc)) from exc
 
     @staticmethod

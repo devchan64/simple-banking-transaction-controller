@@ -5,7 +5,7 @@ from typing import Callable
 
 from datetime import UTC, datetime, timedelta
 
-from banking import AccountRecord, BankingSession, CardRecord, JsonBankGateway
+from banking import AccountRecord, BankingSession, BankGatewayError, CardRecord, JsonBankGateway
 
 
 class FakeBankGateway:
@@ -23,12 +23,14 @@ class FakeBankGateway:
         self.on_get_card_by_number: Callable[[str], CardRecord] | None = None
         self.on_get_card_by_id: Callable[[str], CardRecord] | None = None
         self.on_create_session: Callable[[str], BankingSession] | None = None
+        self.on_get_session: Callable[[str], BankingSession] | None = None
         self.on_verify_pin: Callable[[str, str], CardRecord] | None = None
         self.on_list_accounts: Callable[[str], list[str]] | None = None
         self.on_get_balance: Callable[[str], int] | None = None
         self.on_deposit: Callable[[str, int], int] | None = None
         self.on_withdraw: Callable[[str, int], int] | None = None
         self._session_counter = 0
+        self._sessions: dict[str, BankingSession] = {}
 
     def get_card_by_number(self, card_number: str) -> CardRecord:
         if self.on_get_card_by_number is not None:
@@ -44,11 +46,21 @@ class FakeBankGateway:
         if self.on_create_session is not None:
             return self.on_create_session(card_id)
         self._session_counter += 1
-        return BankingSession(
+        session = BankingSession(
             session_token=f"test-session-{self._session_counter}",
             card_id=card_id,
             expires_at=(datetime.now(UTC) + timedelta(minutes=5)).isoformat(),
         )
+        self._sessions[session.session_token] = session
+        return session
+
+    def get_session(self, session_token: str) -> BankingSession:
+        if self.on_get_session is not None:
+            return self.on_get_session(session_token)
+        try:
+            return self._sessions[session_token]
+        except KeyError as exc:
+            raise BankGatewayError(f"알 수 없는 세션 토큰입니다: {session_token}") from exc
 
     def verify_pin(self, card_number: str, pin: str) -> CardRecord:
         if self.on_verify_pin is not None:
