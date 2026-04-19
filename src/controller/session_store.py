@@ -34,7 +34,6 @@ class StoredSession(BaseModel):
 
     session_token: str
     card_id: str
-    card_number: str
     session_state: SessionState
     selected_account_id: str | None = None
 
@@ -54,12 +53,11 @@ class JsonSessionStore:
         if not self._sessions_path.exists():
             self._write_all([])
 
-    def create_session(self, session_token: str, card_id: str, card_number: str) -> StoredSession:
+    def create_session(self, session_token: str, card_id: str) -> StoredSession:
         """새 활성 세션 레코드를 생성한다."""
         session = StoredSession(
             session_token=session_token,
             card_id=card_id,
-            card_number=card_number,
             session_state=SessionState.CARD_INSERTED,
         )
         sessions = self._read_all()

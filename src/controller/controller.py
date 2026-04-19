@@ -114,7 +114,6 @@ class BankingFlowController:
         self._session_store.create_session(
             session.session_token,
             card.card_id,
-            card.card_number,
         )
         return SessionResult(
             succeeded=True,
@@ -131,7 +130,8 @@ class BankingFlowController:
         """PIN 인증을 처리하고 인증 이후 상태로 전이한다."""
         self._require_state(session, SessionState.CARD_INSERTED)
         try:
-            card = self._bank_gateway.verify_pin(session.card_number, command.pin)
+            card = self._bank_gateway.get_card_by_id(session.card_id)
+            card = self._bank_gateway.verify_pin(card.card_number, command.pin)
             account_ids = self._bank_gateway.list_accounts(card.card_id)
         except PinVerificationError as exc:
             if exc.card_locked or str(exc) == ERROR_PIN_ATTEMPTS_EXCEEDED:
