@@ -93,6 +93,27 @@ class JsonSessionStore:
         self._write_all(sessions)
         return updated_session
 
+    def replace_session(
+        self, current_session_token: str, updated_session: StoredSession
+    ) -> StoredSession:
+        """기존 세션을 새 토큰을 가진 세션으로 교체한다."""
+        sessions = []
+        found = False
+        for session in self._read_all():
+            if session.session_token == current_session_token:
+                sessions.append(updated_session)
+                found = True
+            else:
+                sessions.append(session)
+
+        if not found:
+            raise SessionStoreError(
+                f"알 수 없는 세션 토큰입니다: {current_session_token}"
+            )
+
+        self._write_all(sessions)
+        return updated_session
+
     def _read_all(self) -> list[StoredSession]:
         payload = json.loads(self._sessions_path.read_text(encoding="utf-8"))
         return [StoredSession.model_validate(item) for item in payload]

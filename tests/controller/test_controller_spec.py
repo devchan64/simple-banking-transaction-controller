@@ -7,6 +7,8 @@ from pathlib import Path
 from banking import (
     ERROR_ACCOUNT_LOCKED,
     ERROR_BANK_MAINTENANCE,
+    BankingSession,
+    SessionExpiredError,
 )
 from controller import (
     BankingFlowController,
@@ -14,6 +16,7 @@ from controller import (
     ControllerError,
     JsonSessionStore,
     SessionState,
+    SessionStoreError,
     TransactionType,
 )
 from tests.support.fake_bank_gateway import FakeBankGateway
@@ -606,6 +609,53 @@ class BankingFlowControllerSpec(TestRootSupport, unittest.TestCase):
                     "pin": "1234",
                 }
             )
+
+    def test_expired_session_refreshes_token_and_continues_flow(self) -> None:
+        print(spec_text("만료된 세션은 refresh 후 새 토큰으로 흐름을 이어간다"))
+
+        session = self.controller.handle(
+            {
+                "command_type": CommandType.INSERT_CARD,
+                "card_number": "4000-1234-5678-0001",
+            }
+        )
+        authenticated = self.controller.handle(
+            {
+                "command_type": CommandType.SUBMIT_PIN,
+                "session_token": session.session_token,
+                "pin": "1234",
+            }
+        )
+        selected = self.controller.handle(
+            {
+                "command_type": CommandType.SELECT_ACCOUNT,
+                "session_token": authenticated.session_token,
+                "account_id": "account-001",
+            }
+        )
+
+        def expired_once(session_token: str) -> BankingSession:
+            self.bank_gateway.on_get_session = None
+            raise SessionExpiredError(f"세션이 만료되었습니다: {session_token}")
+
+        self.bank_gateway.on_get_session = expired_once
+
+        balance = self.controller.handle(
+            {
+                "command_type": CommandType.REQUEST_BALANCE,
+                "session_token": selected.session_token,
+            }
+        )
+
+        self.assertEqual(SessionState.RESULT_REPORTED, balance.session_state)
+        self.assertEqual(TransactionType.BALANCE, balance.transaction_type)
+        self.assertNotEqual(selected.session_token, balance.session_token)
+        self.assertEqual(
+            SessionState.ACCOUNT_SELECTED,
+            self._stored_state(balance.session_token),
+        )
+        with self.assertRaisesRegex(SessionStoreError, "알 수 없는 세션 토큰입니다"):
+            self.session_store.get_session(selected.session_token)
 
 
 if __name__ == "__main__":

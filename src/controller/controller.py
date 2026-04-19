@@ -43,6 +43,7 @@ from banking import (
     BankGatewayError,
     ERROR_PIN_ATTEMPTS_EXCEEDED,
     PinVerificationError,
+    SessionExpiredError,
 )
 
 from .command import CommandValidationError, CommandValidator, SessionCommand
@@ -306,6 +307,23 @@ class BankingFlowController:
         try:
             self._bank_gateway.get_session(session_token)
             return self._session_store.get_session(session_token)
+        except SessionExpiredError:
+            return self._refresh_session(session_token)
+        except (BankGatewayError, SessionStoreError) as exc:
+            raise ControllerError(str(exc)) from exc
+
+    def _refresh_session(self, session_token: str | None) -> StoredSession:
+        """banking 이 세션 만료를 알리면 새 토큰으로 로컬 상태를 교체한다."""
+        try:
+            stored_session = self._session_store.get_session(session_token)
+            refreshed_session = self._bank_gateway.refresh_session(session_token)
+            updated_session = stored_session.model_copy(
+                update={"session_token": refreshed_session.session_token}
+            )
+            return self._session_store.replace_session(
+                stored_session.session_token,
+                updated_session,
+            )
         except (BankGatewayError, SessionStoreError) as exc:
             raise ControllerError(str(exc)) from exc
 
