@@ -9,7 +9,7 @@ from .contracts import (
     TransactionType,
 )
 from .result import SessionResult
-from .session_store import JsonSessionStore, SessionStoreError, StoredSession
+from .session_store import FlowRecord, FlowRecordStoreError, JsonFlowRecordStore
 
 __all__ = [
     "BankingFlowController",
@@ -19,12 +19,12 @@ __all__ = [
     "ControllerError",
     "ERROR_INVALID_STATE",
     "FieldName",
-    "JsonSessionStore",
+    "FlowRecord",
+    "FlowRecordStoreError",
+    "JsonFlowRecordStore",
     "ResultStatus",
     "SessionCommand",
     "SessionResult",
     "SessionState",
-    "SessionStoreError",
-    "StoredSession",
     "TransactionType",
 ]

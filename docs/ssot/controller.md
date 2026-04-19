@@ -48,6 +48,7 @@
 - controller 는 필요 시 banking 에 세션 refresh 와 새 토큰을 요청할 수 있어야 한다
 - controller 는 만료된 세션으로 후속 처리를 진행하면 안 된다
 - controller 가 세션 생명주기의 단일 저장 원천을 직접 소유하면 안 된다
+- controller 의 로컬 파일 기록은 세션 lifecycle manager 가 아니라 절차 기록 용도다
 
 ## 의존성
 

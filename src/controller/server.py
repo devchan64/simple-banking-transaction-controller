@@ -8,7 +8,7 @@ from banking import BankingSdk
 from transport import FileTransport, SessionResponseEnvelope
 
 from .controller import BankingFlowController
-from .session_store import JsonSessionStore
+from .session_store import JsonFlowRecordStore
 
 
 def run_server(
@@ -77,7 +77,7 @@ def build_controller(runtime_root: Path, banking_root: Path) -> BankingFlowContr
 
     return BankingFlowController(
         bank_gateway=BankingSdk(banking_root),
-        session_store=JsonSessionStore(active_sessions_path),
+        session_store=JsonFlowRecordStore(active_sessions_path),
     )
 
 

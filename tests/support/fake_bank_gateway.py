@@ -5,7 +5,13 @@ from typing import Callable
 
 from datetime import UTC, datetime, timedelta
 
-from banking import AccountRecord, BankingSession, BankGatewayError, CardRecord, JsonBankGateway
+from banking import (
+    AccountRecord,
+    BankingSession,
+    BankGatewayError,
+    CardRecord,
+    JsonBankGateway,
+)
 
 
 class FakeBankGateway:
@@ -62,7 +68,9 @@ class FakeBankGateway:
         try:
             return self._sessions[session_token]
         except KeyError as exc:
-            raise BankGatewayError(f"알 수 없는 세션 토큰입니다: {session_token}") from exc
+            raise BankGatewayError(
+                f"알 수 없는 세션 토큰입니다: {session_token}"
+            ) from exc
 
     def refresh_session(self, session_token: str) -> BankingSession:
         if self.on_refresh_session is not None:
@@ -85,7 +93,9 @@ class FakeBankGateway:
         try:
             del self._sessions[session_token]
         except KeyError as exc:
-            raise BankGatewayError(f"알 수 없는 세션 토큰입니다: {session_token}") from exc
+            raise BankGatewayError(
+                f"알 수 없는 세션 토큰입니다: {session_token}"
+            ) from exc
 
     def verify_pin(self, card_number: str, pin: str) -> CardRecord:
         if self.on_verify_pin is not None:

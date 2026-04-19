@@ -14,9 +14,9 @@ from controller import (
     BankingFlowController,
     CommandType,
     ControllerError,
-    JsonSessionStore,
+    FlowRecordStoreError,
+    JsonFlowRecordStore,
     SessionState,
-    SessionStoreError,
     TransactionType,
 )
 from tests.support.fake_bank_gateway import FakeBankGateway
@@ -46,7 +46,7 @@ class BankingFlowControllerSpec(TestRootSupport, unittest.TestCase):
             self.accounts_path,
             maintenance_enabled=maintenance_enabled,
         )
-        self.session_store = JsonSessionStore(self.active_sessions_path)
+        self.session_store = JsonFlowRecordStore(self.active_sessions_path)
         return BankingFlowController(
             bank_gateway=self.bank_gateway,
             session_store=self.session_store,
@@ -662,7 +662,7 @@ class BankingFlowControllerSpec(TestRootSupport, unittest.TestCase):
             SessionState.ACCOUNT_SELECTED,
             self._stored_state(balance.session_token),
         )
-        with self.assertRaisesRegex(SessionStoreError, "알 수 없는 세션 토큰입니다"):
+        with self.assertRaisesRegex(FlowRecordStoreError, "알 수 없는 세션 토큰입니다"):
             self.session_store.get_session(selected.session_token)
 
 

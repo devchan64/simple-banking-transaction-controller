@@ -18,7 +18,7 @@ from __future__ import annotations
 현재 구조의 한계
 ----------------
 - 세션 토큰 발급은 ``SessionHistoryStore`` 가 담당한다.
-- 현재 활성 세션 상태와 상태 전이는 ``JsonSessionStore`` 가 담당한다.
+- 현재 절차 상태 기록과 상태 전이는 ``JsonFlowRecordStore`` 가 담당한다.
 - 서버는 controller 와 저장소를 조립해 요청을 전달하지만,
   세션 만료/리프레시/추가 인증 같은 상위 세션 정책은 제공하지 않는다.
 
@@ -49,7 +49,7 @@ from banking import (
 from .command import CommandValidationError, CommandValidator, SessionCommand
 from .contracts import CommandType, SessionState, TransactionType
 from .result import SessionResult
-from .session_store import JsonSessionStore, SessionStoreError, StoredSession
+from .session_store import FlowRecord, FlowRecordStoreError, JsonFlowRecordStore
 
 
 class ControllerError(RuntimeError):
@@ -70,7 +70,7 @@ class BankingFlowController:
     def __init__(
         self,
         bank_gateway: BankGateway,
-        session_store: JsonSessionStore,
+        session_store: JsonFlowRecordStore,
     ) -> None:
         self._bank_gateway = bank_gateway
         self._session_store = session_store
@@ -122,7 +122,7 @@ class BankingFlowController:
         )
 
     def _handle_submit_pin(
-        self, session: StoredSession, command: SessionCommand
+        self, session: FlowRecord, command: SessionCommand
     ) -> SessionResult:
         """PIN 인증을 처리하고 인증 이후 상태로 전이한다."""
         self._require_state(session, SessionState.CARD_INSERTED)
@@ -180,7 +180,7 @@ class BankingFlowController:
         )
 
     def _handle_select_account(
-        self, session: StoredSession, command: SessionCommand
+        self, session: FlowRecord, command: SessionCommand
     ) -> SessionResult:
         """인증된 세션에서 계좌를 선택한다."""
         self._require_state(session, SessionState.AUTHENTICATED)
@@ -210,7 +210,7 @@ class BankingFlowController:
             session_closed=False,
         )
 
-    def _handle_balance(self, session: StoredSession) -> SessionResult:
+    def _handle_balance(self, session: FlowRecord) -> SessionResult:
         """선택된 계좌의 잔액을 조회한다."""
         self._require_state(session, SessionState.ACCOUNT_SELECTED)
         try:
@@ -235,7 +235,7 @@ class BankingFlowController:
         )
 
     def _handle_deposit(
-        self, session: StoredSession, command: SessionCommand
+        self, session: FlowRecord, command: SessionCommand
     ) -> SessionResult:
         """선택된 계좌에 입금을 수행한다."""
         self._require_state(session, SessionState.ACCOUNT_SELECTED)
@@ -262,7 +262,7 @@ class BankingFlowController:
         )
 
     def _handle_withdraw(
-        self, session: StoredSession, command: SessionCommand
+        self, session: FlowRecord, command: SessionCommand
     ) -> SessionResult:
         """선택된 계좌에서 출금을 수행한다."""
         self._require_state(session, SessionState.ACCOUNT_SELECTED)
@@ -288,7 +288,7 @@ class BankingFlowController:
             session_closed=False,
         )
 
-    def _handle_end_session(self, session: StoredSession) -> SessionResult:
+    def _handle_end_session(self, session: FlowRecord) -> SessionResult:
         """현재 세션을 종료 상태로 전이한다."""
         self._bank_gateway.invalidate_session(session.session_token)
         updated_session = session.model_copy(update={"session_state": SessionState.SESSION_CLOSED})
@@ -303,7 +303,7 @@ class BankingFlowController:
             session_closed=True,
         )
 
-    def _load_session(self, session_token: str | None) -> StoredSession:
+    def _load_session(self, session_token: str | None) -> FlowRecord:
         """세션 토큰을 banking 과 로컬 상태 저장소 양쪽에서 확인한다."""
         try:
             stored_session = self._session_store.get_session(session_token)
@@ -313,10 +313,10 @@ class BankingFlowController:
             return stored_session
         except SessionExpiredError:
             return self._refresh_session(session_token)
-        except (BankGatewayError, SessionStoreError) as exc:
+        except (BankGatewayError, FlowRecordStoreError) as exc:
             raise ControllerError(str(exc)) from exc
 
-    def _refresh_session(self, session_token: str | None) -> StoredSession:
+    def _refresh_session(self, session_token: str | None) -> FlowRecord:
         """banking 이 세션 만료를 알리면 새 토큰으로 로컬 상태를 교체한다."""
         try:
             stored_session = self._session_store.get_session(session_token)
@@ -328,17 +328,17 @@ class BankingFlowController:
                 stored_session.session_token,
                 updated_session,
             )
-        except (BankGatewayError, SessionStoreError) as exc:
+        except (BankGatewayError, FlowRecordStoreError) as exc:
             raise ControllerError(str(exc)) from exc
 
     @staticmethod
-    def _require_not_closed(session: StoredSession) -> None:
+    def _require_not_closed(session: FlowRecord) -> None:
         """이미 종료된 세션에는 후속 명령을 허용하지 않는다."""
         if session.session_state == SessionState.SESSION_CLOSED:
             raise ControllerError("이미 종료된 세션입니다")
 
     @staticmethod
-    def _require_state(session: StoredSession, expected_state: SessionState) -> None:
+    def _require_state(session: FlowRecord, expected_state: SessionState) -> None:
         """세션이 기대한 상태에 있을 때만 다음 절차를 허용한다."""
         if session.session_state != expected_state:
             raise ControllerError(

@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-"""controller 활성 세션 저장소.
+"""controller 절차 상태 기록 저장소.
 
 이 모듈 역시 완성된 세션 계층이라고 보기는 어렵다.
 토큰 발급, 만료, 갱신, 정리(cleanup), 세션 이력과의 정합성 보장까지 포함한
 전체 세션 시스템을 제공하지는 못하고,
-현재는 controller 상태머신이 참조할 활성 세션 스냅샷을 파일로 저장하는 역할에 가깝다.
+현재는 controller 상태머신이 참조할 절차 상태 기록을 파일로 저장하는 역할에 가깝다.
 
 그래도 구현의 의미가 완전히 사라진 것은 아니다.
 
@@ -27,8 +27,8 @@ from pydantic import BaseModel, ConfigDict
 from .contracts import SessionState
 
 
-class StoredSession(BaseModel):
-    """controller 가 다루는 활성 세션의 최소 상태 표현."""
+class FlowRecord(BaseModel):
+    """controller 가 기록하는 절차 상태의 최소 표현."""
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -37,14 +37,14 @@ class StoredSession(BaseModel):
     selected_account_id: str | None = None
 
 
-class SessionStoreError(RuntimeError):
-    """활성 세션 저장소 접근 실패를 나타내는 예외."""
+class FlowRecordStoreError(RuntimeError):
+    """절차 상태 기록 저장소 접근 실패를 나타내는 예외."""
 
     pass
 
 
-class JsonSessionStore:
-    """활성 세션 스냅샷을 JSON 파일로 읽고 쓰는 최소 저장소."""
+class JsonFlowRecordStore:
+    """절차 상태 기록을 JSON 파일로 읽고 쓰는 최소 저장소."""
 
     def __init__(self, sessions_path: str | Path) -> None:
         self._sessions_path = Path(sessions_path)
@@ -52,9 +52,9 @@ class JsonSessionStore:
         if not self._sessions_path.exists():
             self._write_all([])
 
-    def create_session(self, session_token: str) -> StoredSession:
-        """새 활성 세션 레코드를 생성한다."""
-        session = StoredSession(
+    def create_session(self, session_token: str) -> FlowRecord:
+        """새 절차 상태 기록을 생성한다."""
+        session = FlowRecord(
             session_token=session_token,
             session_state=SessionState.CARD_INSERTED,
         )
@@ -63,15 +63,15 @@ class JsonSessionStore:
         self._write_all(sessions)
         return session
 
-    def get_session(self, session_token: str) -> StoredSession:
-        """세션 토큰에 해당하는 현재 활성 세션을 조회한다."""
+    def get_session(self, session_token: str) -> FlowRecord:
+        """세션 토큰에 해당하는 현재 절차 상태 기록을 조회한다."""
         for session in self._read_all():
             if session.session_token == session_token:
                 return session
-        raise SessionStoreError(f"알 수 없는 세션 토큰입니다: {session_token}")
+        raise FlowRecordStoreError(f"알 수 없는 세션 토큰입니다: {session_token}")
 
-    def save_session(self, updated_session: StoredSession) -> StoredSession:
-        """기존 활성 세션을 새 상태로 덮어쓴다."""
+    def save_session(self, updated_session: FlowRecord) -> FlowRecord:
+        """기존 절차 상태 기록을 새 상태로 덮어쓴다."""
         sessions = []
         found = False
         for session in self._read_all():
@@ -82,7 +82,7 @@ class JsonSessionStore:
                 sessions.append(session)
 
         if not found:
-            raise SessionStoreError(
+            raise FlowRecordStoreError(
                 f"알 수 없는 세션 토큰입니다: {updated_session.session_token}"
             )
 
@@ -90,9 +90,9 @@ class JsonSessionStore:
         return updated_session
 
     def replace_session(
-        self, current_session_token: str, updated_session: StoredSession
-    ) -> StoredSession:
-        """기존 세션을 새 토큰을 가진 세션으로 교체한다."""
+        self, current_session_token: str, updated_session: FlowRecord
+    ) -> FlowRecord:
+        """기존 기록을 새 토큰을 가진 기록으로 교체한다."""
         sessions = []
         found = False
         for session in self._read_all():
@@ -103,18 +103,18 @@ class JsonSessionStore:
                 sessions.append(session)
 
         if not found:
-            raise SessionStoreError(
+            raise FlowRecordStoreError(
                 f"알 수 없는 세션 토큰입니다: {current_session_token}"
             )
 
         self._write_all(sessions)
         return updated_session
 
-    def _read_all(self) -> list[StoredSession]:
+    def _read_all(self) -> list[FlowRecord]:
         payload = json.loads(self._sessions_path.read_text(encoding="utf-8"))
-        return [StoredSession.model_validate(item) for item in payload]
+        return [FlowRecord.model_validate(item) for item in payload]
 
-    def _write_all(self, sessions: list[StoredSession]) -> None:
+    def _write_all(self, sessions: list[FlowRecord]) -> None:
         payload = [session.model_dump(mode="json") for session in sessions]
         self._sessions_path.write_text(
             json.dumps(payload, ensure_ascii=True, indent=2),

@@ -39,6 +39,7 @@
 
 - 장기적으로 세션 생성과 유효기간 관리는 banking 이 책임지는 편이 맞다
 - controller 가 세션 생명주기의 단일 저장 원천을 직접 소유하는 구조는 목표가 아니다
+- controller 쪽 로컬 파일은 세션 lifecycle 관리보다 절차 기록에 가깝다
 - 현재의 `session-history.json` 과 `active-sessions.json` 은 과도기 구조로 본다
 - 이후에는 세션 토큰, 만료, refresh, 새 토큰 발급 계약이 banking 쪽으로 더 모이는 편이 자연스럽다
 
