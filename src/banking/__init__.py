@@ -15,7 +15,7 @@ from .contracts import (
 )
 from .protocol import BankAction, BankRequest, BankResponse
 from .runtime import BankingRuntimePaths, prepare_banking_runtime
-from .sdk import FileTransportBankGateway, FileTransportBankSdk
+from .sdk import BankingSdk
 from .session import SessionHistoryStore, SessionRecord
 
 __all__ = [
@@ -23,6 +23,7 @@ __all__ = [
     "BankAction",
     "BankGateway",
     "BankGatewayError",
+    "BankingSdk",
     "BankingRuntimePaths",
     "BankRequest",
     "BankResponse",
@@ -32,8 +33,6 @@ __all__ = [
     "ERROR_BANK_MAINTENANCE",
     "ERROR_INVALID_PIN",
     "ERROR_PIN_ATTEMPTS_EXCEEDED",
-    "FileTransportBankGateway",
-    "FileTransportBankSdk",
     "JsonBankGateway",
     "PinVerificationError",
     "prepare_banking_runtime",

@@ -24,8 +24,7 @@
 
 현재 runtime 기본 구현 이름:
 
-- `FileTransportBankSdk`
-- 기존 `FileTransportBankGateway` 이름은 호환 별칭으로만 유지할 수 있다
+- `BankingSdk`
 
 즉 `BankGateway` 자체는 SDK 가 아니다.
 SDK 또는 client 구현체가 `BankGateway` 포트를 구현하는 구조로 이해하는 편이 맞다.

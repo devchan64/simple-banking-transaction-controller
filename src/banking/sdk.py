@@ -14,7 +14,7 @@ from .bank_gateway import (
 from .protocol import BankAction, BankRequest, BankResponse
 
 
-class FileTransportBankSdk(BankGateway):
+class BankingSdk(BankGateway):
     """banking 서버와 파일 transport 로 통신하는 SDK 구현체."""
 
     def __init__(
@@ -142,6 +142,3 @@ class FileTransportBankSdk(BankGateway):
     @staticmethod
     def _request_id() -> str:
         return f"bank-{uuid.uuid4().hex}"
-
-
-FileTransportBankGateway = FileTransportBankSdk

@@ -70,31 +70,7 @@
 
 - `docs/ssot/controller.md`
 
-## 3. Banking SDK 역할 설명 보강
-
-현재 transport 기반 banking 구현은 이름만 보면 banking 내부 gateway 같지만,
-실제로는 controller 가 banking 서버를 호출하기 위한 file transport 기반 통합 SDK 또는 client 에 가깝다.
-
-즉 이 타입은 다음 성격이 섞여 있다.
-
-- `BankGateway` 프로토콜 구현체
-- controller 입장에서의 로컬 SDK 또는 client
-- file transport 기반 IPC 어댑터
-
-문서에 보강되면 좋은 내용:
-
-- 왜 transport 경계를 직접 노출하지 않고 `BankGateway` 추상화 뒤에 숨겼는지
-- 현재 위치와 이름이 온보딩 관점에서 왜 헷갈렸는지
-- 도메인 규칙은 `bank_gateway.py` 쪽에서 보고,
-  `sdk.py` 는 요청 전달/응답 매핑 관점에서 읽어야 한다는 설명
-- 장기적으로는 위치나 이름을 더 명확히 바꿀 여지가 있다는 점
-
-추천 반영 위치:
-
-- `docs/ssot/bank-gateway.md`
-- `docs/ssot/transport.md`
-
-## 4. Transport 테스트 책임 분리 필요성 문서화
+## 3. Transport 테스트 책임 분리 필요성 문서화
 
 현재 `tests/transport/test_transport_spec.py` 는
 transport 자체 계약 검증과 서버 경계 검토가 함께 섞여 있다.
@@ -121,13 +97,12 @@ transport 자체 계약 검증과 서버 경계 검토가 함께 섞여 있다.
 - `docs/ssot/transport.md`
 - 필요 시 `tests/controller/test_controller_spec.md`
 
-## 5. README 수준의 온보딩 설명 보강
+## 4. README 수준의 온보딩 설명 보강
 
 현재 `README.md` 는 실행 흐름과 계층 개요는 잘 설명하지만,
 다음과 같은 "현재 구조의 미완성 지점"은 거의 드러나지 않는다.
 
 - 세션 경계가 history store 와 active session store 로 분리되어 있는 점
-- `FileTransportBankSdk` 가 통합 SDK/client 라는 점
 - transport 테스트가 아직 과도기 구조를 포함하고 있다는 점
 
 README 에 이 모든 세부사항을 길게 넣을 필요는 없지만,
@@ -138,17 +113,16 @@ README 에 이 모든 세부사항을 길게 넣을 필요는 없지만,
 - `현재 한계` 또는 `설계 메모` 섹션 1개 추가
 - 자세한 내용은 SSOT 문서 경로로 링크
 
-## 6. 문서화 우선순위 제안
+## 5. 문서화 우선순위 제안
 
 우선순위가 높은 순서로 정리하면 다음과 같다.
 
 1. `docs/ssot/controller.md` 에 세션 책임의 현재 한계 반영
 2. `docs/ssot/persistence*.md` 에 history store / active session store 분리 설명 반영
 3. `docs/ssot/transport.md` 에 transport 테스트와 worker helper 의 과도기성 반영
-4. `docs/ssot/bank-gateway.md` 에 `FileTransportBankSdk` 의 통합 SDK 성격 반영
-5. `README.md` 에 짧은 온보딩 경고 또는 설계 메모 추가
+4. `README.md` 에 짧은 온보딩 경고 또는 설계 메모 추가
 
-## 7. 문서 작성 원칙
+## 6. 문서 작성 원칙
 
 이 개선 항목들을 실제 문서에 반영할 때는 다음 원칙을 유지하는 편이 좋다.
 
