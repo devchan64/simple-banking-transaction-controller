@@ -49,6 +49,8 @@ class BankGateway(Protocol):
 
     def refresh_session(self, session_token: str) -> BankingSession: ...
 
+    def invalidate_session(self, session_token: str) -> None: ...
+
     def get_card_by_number(self, card_number: str) -> "CardRecord": ...
 
     def get_card_by_id(self, card_id: str) -> "CardRecord": ...
@@ -116,6 +118,11 @@ class JsonBankGateway:
         self._require_session_store()
         self._require_service_available()
         return self._session_store.refresh_session(session_token)
+
+    def invalidate_session(self, session_token: str) -> None:
+        self._require_session_store()
+        self._require_service_available()
+        self._session_store.invalidate_session(session_token)
 
     def get_card_by_id(self, card_id: str) -> CardRecord:
         for card in self._read_cards():

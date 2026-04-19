@@ -25,6 +25,7 @@ class FakeBankGateway:
         self.on_create_session: Callable[[str], BankingSession] | None = None
         self.on_get_session: Callable[[str], BankingSession] | None = None
         self.on_refresh_session: Callable[[str], BankingSession] | None = None
+        self.on_invalidate_session: Callable[[str], None] | None = None
         self.on_verify_pin: Callable[[str, str], CardRecord] | None = None
         self.on_list_accounts: Callable[[str], list[str]] | None = None
         self.on_get_balance: Callable[[str], int] | None = None
@@ -76,6 +77,15 @@ class FakeBankGateway:
         del self._sessions[session_token]
         self._sessions[refreshed.session_token] = refreshed
         return refreshed
+
+    def invalidate_session(self, session_token: str) -> None:
+        if self.on_invalidate_session is not None:
+            self.on_invalidate_session(session_token)
+            return
+        try:
+            del self._sessions[session_token]
+        except KeyError as exc:
+            raise BankGatewayError(f"알 수 없는 세션 토큰입니다: {session_token}") from exc
 
     def verify_pin(self, card_number: str, pin: str) -> CardRecord:
         if self.on_verify_pin is not None:

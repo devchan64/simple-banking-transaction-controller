@@ -111,10 +111,7 @@ class BankingFlowController:
         """
         card = self._bank_gateway.get_card_by_number(command.card_number)
         session = self._bank_gateway.create_session(card.card_id)
-        self._session_store.create_session(
-            session.session_token,
-            card.card_id,
-        )
+        self._session_store.create_session(session.session_token)
         return SessionResult(
             succeeded=True,
             status_code="SESSION_STARTED",
@@ -130,11 +127,13 @@ class BankingFlowController:
         """PIN 인증을 처리하고 인증 이후 상태로 전이한다."""
         self._require_state(session, SessionState.CARD_INSERTED)
         try:
-            card = self._bank_gateway.get_card_by_id(session.card_id)
+            banking_session = self._bank_gateway.get_session(session.session_token)
+            card = self._bank_gateway.get_card_by_id(banking_session.card_id)
             card = self._bank_gateway.verify_pin(card.card_number, command.pin)
             account_ids = self._bank_gateway.list_accounts(card.card_id)
         except PinVerificationError as exc:
             if exc.card_locked or str(exc) == ERROR_PIN_ATTEMPTS_EXCEEDED:
+                self._bank_gateway.invalidate_session(session.session_token)
                 closed_session = session.model_copy(
                     update={"session_state": SessionState.SESSION_CLOSED}
                 )
@@ -186,7 +185,8 @@ class BankingFlowController:
         """인증된 세션에서 계좌를 선택한다."""
         self._require_state(session, SessionState.AUTHENTICATED)
         try:
-            account_ids = self._bank_gateway.list_accounts(session.card_id)
+            banking_session = self._bank_gateway.get_session(session.session_token)
+            account_ids = self._bank_gateway.list_accounts(banking_session.card_id)
         except BankGatewayError as exc:
             raise ControllerError(str(exc)) from exc
 
@@ -290,6 +290,7 @@ class BankingFlowController:
 
     def _handle_end_session(self, session: StoredSession) -> SessionResult:
         """현재 세션을 종료 상태로 전이한다."""
+        self._bank_gateway.invalidate_session(session.session_token)
         updated_session = session.model_copy(update={"session_state": SessionState.SESSION_CLOSED})
         self._session_store.save_session(updated_session)
         return SessionResult(
@@ -305,8 +306,11 @@ class BankingFlowController:
     def _load_session(self, session_token: str | None) -> StoredSession:
         """세션 토큰을 banking 과 로컬 상태 저장소 양쪽에서 확인한다."""
         try:
+            stored_session = self._session_store.get_session(session_token)
+            if stored_session.session_state == SessionState.SESSION_CLOSED:
+                return stored_session
             self._bank_gateway.get_session(session_token)
-            return self._session_store.get_session(session_token)
+            return stored_session
         except SessionExpiredError:
             return self._refresh_session(session_token)
         except (BankGatewayError, SessionStoreError) as exc:

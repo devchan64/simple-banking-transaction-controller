@@ -151,6 +151,17 @@ class BankingSessionStore:
         self._write_all(sessions)
         return refreshed
 
+    def invalidate_session(self, session_token: str) -> None:
+        current_sessions = self._read_all()
+        sessions = [
+            session
+            for session in current_sessions
+            if session.session_token != session_token
+        ]
+        if len(sessions) == len(current_sessions):
+            raise BankGatewayError(f"알 수 없는 세션 토큰입니다: {session_token}")
+        self._write_all(sessions)
+
     def list_sessions(self) -> list[BankingSession]:
         return self._read_all()
 

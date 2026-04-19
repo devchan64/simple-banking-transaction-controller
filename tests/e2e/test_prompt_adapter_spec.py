@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import subprocess
+import sys
 import unittest
 from pathlib import Path
 
@@ -23,7 +24,7 @@ class PromptAdapterE2ESpec(ModuleProcessSupport, TestRootSupport, unittest.TestC
         banking_server, controller_server = self._start_servers()
         try:
             completed = subprocess.run(
-                ["python3", "-m", "prompt_adapter", str(self.transport_root)],
+                [sys.executable, "-m", "prompt_adapter", str(self.transport_root)],
                 cwd=self.repo_root(),
                 env=self.python_env(),
                 text=True,
@@ -62,7 +63,7 @@ class PromptAdapterE2ESpec(ModuleProcessSupport, TestRootSupport, unittest.TestC
         banking_server, controller_server = self._start_servers()
         try:
             completed = subprocess.run(
-                ["python3", "-m", "prompt_adapter", str(self.transport_root)],
+                [sys.executable, "-m", "prompt_adapter", str(self.transport_root)],
                 cwd=self.repo_root(),
                 env=self.python_env(),
                 text=True,
@@ -103,7 +104,7 @@ class PromptAdapterE2ESpec(ModuleProcessSupport, TestRootSupport, unittest.TestC
         banking_server, controller_server = self._start_servers()
         try:
             completed = subprocess.run(
-                ["python3", "-m", "prompt_adapter", str(self.transport_root)],
+                [sys.executable, "-m", "prompt_adapter", str(self.transport_root)],
                 cwd=self.repo_root(),
                 env=self.python_env(),
                 text=True,
@@ -146,7 +147,7 @@ class PromptAdapterE2ESpec(ModuleProcessSupport, TestRootSupport, unittest.TestC
         banking_server, controller_server = self._start_servers()
         try:
             completed = subprocess.run(
-                ["python3", "-m", "prompt_adapter", str(self.transport_root)],
+                [sys.executable, "-m", "prompt_adapter", str(self.transport_root)],
                 cwd=self.repo_root(),
                 env=self.python_env(),
                 text=True,
@@ -183,7 +184,7 @@ class PromptAdapterE2ESpec(ModuleProcessSupport, TestRootSupport, unittest.TestC
         banking_server, controller_server = self._start_servers()
         try:
             completed = subprocess.run(
-                ["python3", "-m", "prompt_adapter", str(self.transport_root)],
+                [sys.executable, "-m", "prompt_adapter", str(self.transport_root)],
                 cwd=self.repo_root(),
                 env=self.python_env(),
                 text=True,
@@ -216,7 +217,7 @@ class PromptAdapterE2ESpec(ModuleProcessSupport, TestRootSupport, unittest.TestC
         banking_server, controller_server = self._start_servers()
         try:
             completed = subprocess.run(
-                ["python3", "-m", "prompt_adapter", str(self.transport_root)],
+                [sys.executable, "-m", "prompt_adapter", str(self.transport_root)],
                 cwd=self.repo_root(),
                 env=self.python_env(),
                 text=True,

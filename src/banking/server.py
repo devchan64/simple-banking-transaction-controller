@@ -130,6 +130,9 @@ def _dispatch_action(
         return gateway.get_session(request.session_token).__dict__
     if request.action == BankAction.REFRESH_SESSION:
         return gateway.refresh_session(request.session_token).__dict__
+    if request.action == BankAction.INVALIDATE_SESSION:
+        gateway.invalidate_session(request.session_token)
+        return {}
     if request.action == BankAction.GET_CARD_BY_NUMBER:
         return gateway.get_card_by_number(request.card_number).__dict__
     if request.action == BankAction.GET_CARD_BY_ID:

@@ -11,6 +11,7 @@ from .bank_gateway import (
     BankGatewayError,
     CardRecord,
     PinVerificationError,
+    SessionExpiredError,
 )
 from .protocol import BankAction, BankRequest, BankResponse
 
@@ -71,6 +72,15 @@ class BankingSdk(BankGateway):
             )
         )
         return BankingSession(**payload)
+
+    def invalidate_session(self, session_token: str) -> None:
+        self._dispatch(
+            BankRequest(
+                request_id=self._request_id(),
+                action=BankAction.INVALIDATE_SESSION,
+                session_token=session_token,
+            )
+        )
 
     def get_card_by_id(self, card_id: str) -> CardRecord:
         payload = self._dispatch(
@@ -149,6 +159,8 @@ class BankingSdk(BankGateway):
                 remaining_attempts=int(details.get("remaining_attempts", 0)),
                 card_locked=bool(details.get("card_locked", False)),
             )
+        if response.error_code == "SessionExpiredError":
+            raise SessionExpiredError(response.error_message)
 
         raise BankGatewayError(response.error_message)
 

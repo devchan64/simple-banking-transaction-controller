@@ -177,6 +177,14 @@ class BankingFlowControllerSpec(TestRootSupport, unittest.TestCase):
             SessionState.SESSION_CLOSED,
             self._stored_state(session.session_token),
         )
+        with self.assertRaisesRegex(ControllerError, "이미 종료된 세션입니다"):
+            self.controller.handle(
+                {
+                    "command_type": CommandType.SUBMIT_PIN,
+                    "session_token": session.session_token,
+                    "pin": "1234",
+                }
+            )
 
     def test_select_account_before_authentication_fails(self) -> None:
         print(spec_text("인증 전 SELECT_ACCOUNT 는 실패한다"))

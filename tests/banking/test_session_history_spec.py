@@ -101,6 +101,14 @@ class BankingSessionStoreSpec(TestRootSupport, unittest.TestCase):
         self.assertEqual(1, len(self.store.list_sessions()))
         self.assertEqual(2, len(self.history_store.list_sessions()))
 
+    def test_invalidate_session_removes_active_session(self) -> None:
+        print(spec_text("invalidate 는 활성 세션을 제거한다"))
+
+        created = self.store.create_session("card-001")
+        self.store.invalidate_session(created.session_token)
+
+        self.assertEqual([], self.store.list_sessions())
+
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
