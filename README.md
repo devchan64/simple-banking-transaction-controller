@@ -27,6 +27,12 @@
 - `BankGateway`: 외부 데이터 접근 / PIN 검증 / 금액 검증을 맡는 작은 연결 도구
 - `Persistence`: controller 검증용 최소 mock 저장 / 세션 상태 저장
 
+경계 메모:
+- `Transport` 는 통신 수단이다
+- `BankGateway` 는 controller 가 의존하는 banking 기능 포트다
+- file transport 기반 banking 구현은 transport 를 사용하는 adapter 또는 SDK/client 이지만,
+  controller 에서는 `BankGateway` 구현체로 주입된다
+
 ## 목적
 
 - controller 중심 설계

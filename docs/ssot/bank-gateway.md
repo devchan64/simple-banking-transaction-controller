@@ -2,46 +2,67 @@
 
 ## 목적
 
-- controller 검증 지원
-- 외부 데이터 접근 연결
-- 최소 흐름 지원
+- controller 가 banking 기능을 호출하는 포트 정의
+- 외부 banking 접근을 controller 에서 분리
+- 구현체 교체 가능성 유지
 
 ## 성격
 
-- 작은 연결 도구
 - controller 의존 포트
-- mock 중심 도구
-- 교체 가능한 경계
+- banking 도메인 접근 계약
+- 구현체와 분리된 추상 경계
+- mock 친화적 계약
 
-## 방식
+## 경계
+
+- `BankGateway`
+  - controller 가 의존하는 포트
+  - 카드 조회, PIN 검증, 계좌 조회, 입출금 같은 banking 기능 계약을 표현한다
+- transport 기반 구현체
+  - 위 포트를 만족시키는 adapter 또는 SDK 역할을 한다
+  - request 생성, transport 기록, polling, 응답 역직렬화, 예외 매핑을 담당한다
+
+현재 runtime 기본 구현 이름:
+
+- `FileTransportBankSdk`
+- 기존 `FileTransportBankGateway` 이름은 호환 별칭으로만 유지할 수 있다
+
+즉 `BankGateway` 자체는 SDK 가 아니다.
+SDK 또는 client 구현체가 `BankGateway` 포트를 구현하는 구조로 이해하는 편이 맞다.
+
+## 제공 기능
 
 - 카드 조회
-- 계좌 조회
+- PIN 검증
+- 계좌 목록 조회
 - 잔액 조회
 - 입금 반영
 - 출금 반영
 
 ## 책임
 
-- controller 요청 전달
-- persistence 접근 위임
-- PIN 검증
-- 금액 검증
-- 필요한 데이터 반환
+- controller 가 필요한 banking 기능 계약 제공
+- 구현체가 교체되어도 controller 흐름 유지
+- banking 결과와 오류를 controller 가 다룰 수 있는 형태로 노출
+
+## 비책임
+
+- transport 방식 자체를 표준화하지 않는다
+- request/response 파일 형식을 직접 정의하지 않는다
+- polling, timeout, 직렬화 세부사항을 포트에 노출하지 않는다
+- server process lifecycle 을 포트 책임으로 두지 않는다
 
 ## 구현 기준
 
-- 카드 확인
-- PIN 확인
-- 계좌 목록 확인
-- 잔액 반환
-- 입금 반영
-- 출금 반영
+- controller 는 `BankGateway` 포트만 안다
+- mock 구현과 runtime 구현은 같은 포트를 공유한다
+- transport 구현은 포트 뒤에 숨긴다
+- 도메인 규칙과 transport 세부사항을 섞지 않는다
 
 ## 구현 키워드
 
-- thin gateway
-- simple bridge
+- controller port
+- replaceable adapter
 - mock-friendly
-- bank data validation
-- amount validation
+- domain boundary
+- no transport detail leakage

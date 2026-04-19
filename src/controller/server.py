@@ -4,7 +4,7 @@ import argparse
 import time
 from pathlib import Path
 
-from banking import FileTransportBankGateway, SessionHistoryStore
+from banking import FileTransportBankSdk, SessionHistoryStore
 from transport import FileTransport, SessionResponseEnvelope
 
 from .controller import BankingFlowController
@@ -77,7 +77,7 @@ def build_controller(runtime_root: Path, banking_root: Path) -> BankingFlowContr
     active_sessions_path = runtime_root / "active-sessions.json"
 
     return BankingFlowController(
-        bank_gateway=FileTransportBankGateway(banking_root),
+        bank_gateway=FileTransportBankSdk(banking_root),
         session_history_store=SessionHistoryStore(session_history_path),
         session_store=JsonSessionStore(active_sessions_path),
     )
