@@ -1,5 +1,34 @@
 from __future__ import annotations
 
+"""transport 테스트의 과도기 스펙 모음.
+
+이 파일은 원래 transport 자체를 검증하려는 목적에서 시작했지만,
+controller 서버가 충분히 정리되기 전 단계에서 서버 경계 검증까지 함께 떠안으면서
+범위가 넓어진 상태를 반영한다.
+
+따라서 현재 이 스펙 코드는 경계 분리가 필요한 상태로 보는 편이 맞다.
+transport 자체의 단순 계약을 검증하는 스펙과,
+실제 서버를 띄운 뒤 일부 프로토콜과 데이터 처리를 검토하는 스펙은
+장기적으로 서로 다른 파일이나 계층으로 나뉘는 편이 자연스럽다.
+
+현재 관점에서 보면 관심사는 두 갈래로 분리되는 편이 자연스럽다.
+
+1. transport 단일 명령 테스트
+- request 파일을 올바른 위치에 기록하는지
+- response 파일을 올바른 위치에서 읽는지
+- ``dispatch()`` 가 요청 기록과 응답 대기를 올바르게 연결하는지
+- ``session_id`` 나 command payload를 재해석하지 않고 그대로 직렬화하는지
+
+2. 서버 구동을 통한 일부 프로토콜 검증
+- 실제 controller 서버가 transport 경계를 통해 request를 읽고 response를 쓰는지
+- 서버가 성공/실패 응답 구조를 transport 계약에 맞춰 기록하는지
+- 파일 경계를 넘는 최소 프로토콜만 확인하고, controller 세부 상태 전이나
+  비즈니스 결과 의미 검증은 더 상위의 통합 테스트로 넘기는지
+
+즉 이 파일은 장기적으로 transport 자체 검증과 서버 데이터 처리 검토 사이를
+정리해 나가기 위한 중간 상태의 테스트 묶음으로 이해하는 편이 맞다.
+"""
+
 import subprocess
 import time
 import unittest
@@ -21,6 +50,14 @@ from tests.support.spec_support import TestRootSupport, flow_text, spec_text
 
 
 class FileTransportSpec(ModuleProcessSupport, TestRootSupport, unittest.TestCase):
+    """transport 계약 검증과 서버 경계 검토가 함께 남아 있는 과도기 테스트 클래스.
+
+    이상적으로는 여기서 transport 자체의 단순 계약만 남기고,
+    실제 서버를 띄워 데이터를 처리하는 검토는 별도 서버/통합 스펙으로
+    분리하는 편이 테스트 의도와 책임 구분에 더 잘 맞는다.
+    즉 현재 클래스는 유지보다 경계 분리 방향의 정리가 필요한 테스트 묶음에 가깝다.
+    """
+
     def setUp(self) -> None:
         self.print_test_header()
         self.test_root = Path(".test-run/transport") / self._testMethodName
@@ -209,6 +246,12 @@ class FileTransportSpec(ModuleProcessSupport, TestRootSupport, unittest.TestCase
         transport_root: Path,
         request_id: str,
     ) -> subprocess.Popen[str]:
+        """현재 transport 스펙이 의존하는 과도기 worker 프로세스를 시작한다.
+
+        이 helper는 transport 단일 기능 검증만 놓고 보면 불필요하게 무겁다.
+        향후에는 실제 controller 서버를 직접 띄우는 검토와,
+        transport 자체를 단독으로 검증하는 테스트를 분리하는 쪽이 더 자연스럽다.
+        """
         return subprocess.Popen(
             [
                 "python3",

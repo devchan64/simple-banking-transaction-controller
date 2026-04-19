@@ -1,5 +1,43 @@
 from __future__ import annotations
 
+"""controller 상태머신 구현.
+
+이 모듈은 현재 ATM 절차의 핵심 상태 전이를 담당하지만,
+세션 설계 관점에서는 마무리되지 못한 과도기 구현의 성격도 함께 가진다.
+
+배경
+----
+- 초기 목표 중 하나는 서버가 세션 토큰을 발급하고,
+  controller 는 그 토큰을 바탕으로 인증된 세션 흐름을 처리하며,
+  이후 만료, 갱신(refresh), 추가 검증 같은 세션 규칙까지 한 흐름으로
+  정리하는 것이었다.
+- 하지만 실제 구현은 그 목표를 끝까지 밀어붙이지 못했다.
+  그 결과 토큰 발급 이력과 활성 세션 상태가 서로 다른 저장소로 분리되어 있고,
+  서버와 controller 사이의 세션 책임도 충분히 정리되지 않은 채 남아 있다.
+
+현재 구조의 한계
+----------------
+- 세션 토큰 발급은 ``SessionHistoryStore`` 가 담당한다.
+- 현재 활성 세션 상태와 상태 전이는 ``JsonSessionStore`` 가 담당한다.
+- 서버는 controller 와 저장소를 조립해 요청을 전달하지만,
+  세션 만료/리프레시/추가 인증 같은 상위 세션 정책은 제공하지 않는다.
+
+즉 현재 구현은 "controller 상태머신"은 제공하지만,
+"완성된 세션 시스템"까지는 제공하지 못한다.
+
+향후 정리 시 반영되면 좋은 점
+---------------------------
+- 세션 토큰의 발급 주체와 검증 주체를 더 명확히 나눌 것
+- 세션 이력과 활성 세션 상태의 단일 진실 원천을 정할 것
+- 만료 시각, 갱신 시각, 추가 인증 문맥 같은 세션 메타데이터를
+  어느 계층이 관리할지 결정할 것
+- 서버와 controller 가 각각 세션을 따로 들고 있는 모양이 아니라,
+  하나의 세션 생명주기를 공유하도록 정리할 것
+
+따라서 이 모듈을 읽을 때는 현재 동작하는 상태 전이 로직과 별개로,
+세션 책임 분리가 아직 완료되지 않은 코드라는 점을 함께 염두에 둘 필요가 있다.
+"""
+
 from banking import (
     BankGateway,
     BankGatewayError,
@@ -15,10 +53,20 @@ from .session_store import JsonSessionStore, SessionStoreError, StoredSession
 
 
 class ControllerError(RuntimeError):
+    """controller 계층에서 외부로 노출하는 공통 예외."""
+
     pass
 
 
 class BankingFlowController:
+    """ATM 절차를 상태머신으로 처리하는 controller.
+
+    현재는 세션 상태 전이와 명령 검증 이후의 흐름 제어를 담당한다.
+    다만 세션 토큰 발급, 활성 세션 저장, 서버 조립 책임이 완전히 하나로
+    정리된 상태는 아니므로, 장기적으로는 더 명확한 세션 경계 정리가
+    필요한 controller 로 보는 편이 맞다.
+    """
+
     def __init__(
         self,
         bank_gateway: BankGateway,
@@ -30,6 +78,7 @@ class BankingFlowController:
         self._session_store = session_store
 
     def handle(self, payload: SessionCommand | dict[str, object]) -> SessionResult:
+        """명령을 검증하고 현재 세션 상태에 맞는 절차 처리기로 위임한다."""
         try:
             command = CommandValidator.validate(payload)
         except CommandValidationError as exc:
@@ -57,6 +106,12 @@ class BankingFlowController:
         raise ControllerError(f"Unsupported command_type: {command.command_type}")
 
     def _handle_insert_card(self, command: SessionCommand) -> SessionResult:
+        """카드 입력으로 새 세션을 시작한다.
+
+        현재는 session history 에서 토큰을 발급한 뒤 active session 저장소에
+        다시 세션을 생성한다. 이 이중 저장 구조는 동작은 하지만,
+        장기적으로는 발급과 활성 상태 관리 책임을 더 명확히 정리할 필요가 있다.
+        """
         card = self._bank_gateway.get_card_by_number(command.card_number)
         record = self._session_history_store.issue_session(card.card_id)
         self._session_store.create_session(record.session_token, card.card_id, card.card_number)
@@ -72,6 +127,7 @@ class BankingFlowController:
     def _handle_submit_pin(
         self, session: StoredSession, command: SessionCommand
     ) -> SessionResult:
+        """PIN 인증을 처리하고 인증 이후 상태로 전이한다."""
         self._require_state(session, SessionState.CARD_INSERTED)
         try:
             card = self._bank_gateway.verify_pin(session.card_number, command.pin)
@@ -126,6 +182,7 @@ class BankingFlowController:
     def _handle_select_account(
         self, session: StoredSession, command: SessionCommand
     ) -> SessionResult:
+        """인증된 세션에서 계좌를 선택한다."""
         self._require_state(session, SessionState.AUTHENTICATED)
         try:
             account_ids = self._bank_gateway.list_accounts(session.card_id)
@@ -153,6 +210,7 @@ class BankingFlowController:
         )
 
     def _handle_balance(self, session: StoredSession) -> SessionResult:
+        """선택된 계좌의 잔액을 조회한다."""
         self._require_state(session, SessionState.ACCOUNT_SELECTED)
         try:
             balance = self._bank_gateway.get_balance(session.selected_account_id)
@@ -178,6 +236,7 @@ class BankingFlowController:
     def _handle_deposit(
         self, session: StoredSession, command: SessionCommand
     ) -> SessionResult:
+        """선택된 계좌에 입금을 수행한다."""
         self._require_state(session, SessionState.ACCOUNT_SELECTED)
         try:
             balance = self._bank_gateway.deposit(session.selected_account_id, command.amount)
@@ -204,6 +263,7 @@ class BankingFlowController:
     def _handle_withdraw(
         self, session: StoredSession, command: SessionCommand
     ) -> SessionResult:
+        """선택된 계좌에서 출금을 수행한다."""
         self._require_state(session, SessionState.ACCOUNT_SELECTED)
         try:
             balance = self._bank_gateway.withdraw(session.selected_account_id, command.amount)
@@ -228,6 +288,7 @@ class BankingFlowController:
         )
 
     def _handle_end_session(self, session: StoredSession) -> SessionResult:
+        """현재 세션을 종료 상태로 전이한다."""
         updated_session = session.model_copy(update={"session_state": SessionState.SESSION_CLOSED})
         self._session_store.save_session(updated_session)
         return SessionResult(
@@ -241,6 +302,7 @@ class BankingFlowController:
         )
 
     def _load_session(self, session_token: str | None) -> StoredSession:
+        """세션 토큰으로 활성 세션 저장소에서 현재 세션을 읽어온다."""
         try:
             return self._session_store.get_session(session_token)
         except SessionStoreError as exc:
@@ -248,11 +310,13 @@ class BankingFlowController:
 
     @staticmethod
     def _require_not_closed(session: StoredSession) -> None:
+        """이미 종료된 세션에는 후속 명령을 허용하지 않는다."""
         if session.session_state == SessionState.SESSION_CLOSED:
             raise ControllerError("이미 종료된 세션입니다")
 
     @staticmethod
     def _require_state(session: StoredSession, expected_state: SessionState) -> None:
+        """세션이 기대한 상태에 있을 때만 다음 절차를 허용한다."""
         if session.session_state != expected_state:
             raise ControllerError(
                 f"Invalid session state: expected {expected_state}, got {session.session_state}"
