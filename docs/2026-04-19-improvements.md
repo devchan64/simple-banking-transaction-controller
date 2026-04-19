@@ -17,7 +17,25 @@
 
 ## 1. 세션 경계 문서 보강
 
-현재 세션 관련 구현은 두 갈래로 나뉘어 있다.
+장기적으로 세션의 단일 진실 원천은 `banking` 이 가지는 편이 맞다.
+
+목표 구조:
+
+- `banking`
+  - 세션 생성
+  - 세션 토큰 발급
+  - 세션 유효기간 관리
+  - 세션 refresh
+  - 필요 시 새 토큰 재발급
+- `controller`
+  - banking 이 발급한 세션 토큰을 받아 이후 처리에 사용
+  - 토큰과 유효기간 정보를 신뢰해 클라이언트 요청 흐름 제어
+  - 만료 감지 시 banking 에 refresh 또는 새 토큰 발급 요청
+- `client`
+  - controller 에 세션 토큰 전달
+
+현재 구현은 아직 이 목표 구조에 도달하지 못했고,
+세션 관련 구현이 두 갈래로 나뉘어 있다.
 
 - `src/banking/session.py`
   - 세션 토큰 발급 이력을 남긴다
@@ -29,19 +47,21 @@
 
 문서에 보강되면 좋은 내용:
 
-- 세션 토큰 발급 이력과 활성 세션 상태가 서로 다른 저장소로 나뉜 현재 이유
-- 현재 구조가 완성된 세션 시스템이 아니라 과도기 구현이라는 설명
-- 아직 비어 있는 세션 정책 범위
-  - 만료
-  - 갱신(refresh)
-  - 무효화
-  - 활성 세션 정리(cleanup)
-  - 세션 메타데이터 관리
-- 장기적으로 세션의 단일 진실 원천을 어디에 둘지에 대한 결정 필요성
+- 세션 생성 주체는 banking 이고 controller 는 소비자라는 구조
+- 생성된 세션 토큰이 controller 로 전달되는 흐름
+- controller 가 토큰을 사용해 banking 과 통신하는 구조
+- 세션 유효기간은 banking 이 관리하고 controller 는 이를 신뢰한다는 원칙
+- controller 가 유효기간 만료를 감지하면 banking 에 refresh 와 새 토큰을 요청할 수 있다는 점
+- 현재 구조가 위 목표로 가기 전의 과도기 구현이라는 설명
+- 현재 남아 있는 이중 저장 구조
+  - 발급 이력
+  - 활성 세션 상태
+- 위 이중 저장 구조를 정리해야 한다는 설명
 
 추천 반영 위치:
 
 - `docs/ssot/controller.md`
+- `docs/ssot/bank-gateway.md`
 - `docs/ssot/persistence.md`
 - `docs/ssot/persistence-json.md`
 
@@ -56,15 +76,20 @@
   - 명령 검증
   - 상태 전이
   - 결과 생성
+  - 세션 만료 감지
+  - 세션 refresh 요청 orchestration
 - `Controller` 가 아직 책임지지 않는 범위
-  - 세션 만료 정책
-  - 세션 갱신 정책
+  - 세션 생성
+  - 세션 토큰 발급
+  - 세션 만료 정책의 원천 관리
+  - 세션 갱신 정책의 원천 관리
   - 추가 인증 정책
-  - 세션 생명주기 전체 orchestration
-- 현재 서버 조립 계층과 controller 사이에서 세션 책임이 완전히 정리되지 않았다는 설명
+  - 세션 생명주기 저장의 단일 원천 관리
+- controller 가 세션을 소유하는 것이 아니라 banking 세션을 신뢰하고 사용하는 구조라는 설명
+- refresh 결과로 새 토큰이 내려오면 controller 가 이후 절차에 반영해야 한다는 설명
 
 이 내용이 빠져 있으면 문서를 읽는 사람이
-"세션 토큰이 이미 있으니 전체 세션 시스템도 완성돼 있겠지"라고 오해하기 쉽다.
+"세션 토큰이 이미 있으니 controller 가 세션 자체를 관리하겠지"라고 오해하기 쉽다.
 
 추천 반영 위치:
 
@@ -75,7 +100,8 @@
 현재 `README.md` 는 실행 흐름과 계층 개요는 잘 설명하지만,
 다음과 같은 "현재 구조의 미완성 지점"은 거의 드러나지 않는다.
 
-- 세션 경계가 history store 와 active session store 로 분리되어 있는 점
+- 세션 생성과 만료 관리는 장기적으로 banking 이 책임져야 한다는 점
+- 현재는 세션 경계가 history store 와 active session store 로 분리된 과도기 구조라는 점
 
 README 에 이 모든 세부사항을 길게 넣을 필요는 없지만,
 처음 들어오는 사람이 큰 오해를 하지 않도록 짧은 주석 수준의 안내는 있으면 좋다.
@@ -89,9 +115,10 @@ README 에 이 모든 세부사항을 길게 넣을 필요는 없지만,
 
 우선순위가 높은 순서로 정리하면 다음과 같다.
 
-1. `docs/ssot/controller.md` 에 세션 책임의 현재 한계 반영
-2. `docs/ssot/persistence*.md` 에 history store / active session store 분리 설명 반영
-3. `README.md` 에 짧은 온보딩 경고 또는 설계 메모 추가
+1. `docs/ssot/controller.md` 에 banking 중심 세션 모델과 controller 책임 범위 반영
+2. `docs/ssot/bank-gateway.md` 에 세션 생성 / refresh / 새 토큰 계약 방향 반영
+3. `docs/ssot/persistence*.md` 에 현재 이중 저장 구조가 과도기라는 설명 반영
+4. `README.md` 에 짧은 온보딩 경고 또는 설계 메모 추가
 
 ## 5. 문서 작성 원칙
 

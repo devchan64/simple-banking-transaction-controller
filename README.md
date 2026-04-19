@@ -33,6 +33,11 @@
 - file transport 기반 banking 구현은 transport 를 사용하는 adapter 또는 SDK/client 이지만,
   controller 에서는 `BankGateway` 구현체로 주입된다
 
+세션 메모:
+- 장기적으로 세션 생성과 유효기간 관리는 `banking` 이 책임지는 구조를 목표로 한다
+- `controller` 는 banking 이 발급한 세션 토큰과 유효기간 정보를 신뢰해 흐름을 제어한다
+- 현재의 `session-history.json` 과 `active-sessions.json` 구조는 과도기 구현이다
+
 ## 목적
 
 - controller 중심 설계
@@ -149,7 +154,7 @@ bash scripts/run-controller-server.sh /path/to/transport-root /path/to/controlle
 - `.transport`
   - Prompt Adapter와 controller 서버가 request/response 파일을 주고받는 전송 경계
 - `.controller`
-  - controller 서버의 세션 상태 저장 경계
+  - controller 서버의 현재 상태 저장 경계
   - `session-history.json`, `active-sessions.json`이 생성됨
 - `.banking`
   - banking 서버의 실행 경계

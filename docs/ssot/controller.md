@@ -10,7 +10,7 @@
 
 - `handle(command)` 단일 진입점
 - `SessionCommand` 계약 검증
-- 세션 검증
+- banking 이 발급한 세션 토큰 사용
 - 세션 정보 조회
 - 세션 상태 검증
 - 상태 전이 수행
@@ -40,17 +40,19 @@
 
 ## 세션 처리
 
-- controller 는 persistence 에서 세션을 조회할 수 있어야 한다
-- controller 는 세션이 유효한지 확인할 수 있어야 한다
-- controller 는 세션 정보로 이후 처리를 이어갈 수 있어야 한다
+- 세션 생성 주체는 banking 이다
+- controller 는 banking 이 발급한 세션 토큰을 받아 이후 처리에 사용한다
+- controller 는 세션 토큰으로 banking 과 통신할 수 있어야 한다
+- controller 는 세션 유효기간을 신뢰해 클라이언트 후속 처리를 진행할 수 있어야 한다
 - controller 는 세션 만료를 감지할 수 있어야 한다
-- controller 는 필요 시 세션 갱신을 요청할 수 있어야 한다
+- controller 는 필요 시 banking 에 세션 refresh 와 새 토큰을 요청할 수 있어야 한다
 - controller 는 만료된 세션으로 후속 처리를 진행하면 안 된다
+- controller 가 세션 생명주기의 단일 저장 원천을 직접 소유하면 안 된다
 
 ## 의존성
 
 - 직접 의존: `BankGatewayPort`
-- 직접 의존: persistence 내부 세션 저장
+- 직접 의존: 세션 토큰을 포함한 banking 세션 계약
 - 비의존: CLI
 - 비의존: transport
 - 비의존: JSON
